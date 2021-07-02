@@ -1,0 +1,14 @@
+name: SkyBeeVoteSystem
+version: ${project.version}
+main: de.hakuyamu.skybee.votesystem.VoteSystem
+api-version: 1.16
+depend: [ Votifier ]
+authors: [ Hakuyamu ]
+
+commands:
+  vote:
+    description: vote command
+  voteadmin:
+    permission: skybee.votesystem.command.admin
+    aliases:
+      - vadmin
