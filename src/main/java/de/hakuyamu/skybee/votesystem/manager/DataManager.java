@@ -97,17 +97,21 @@ public class DataManager {
         JSONArray array = new JSONArray();
 
         userHashMap.keySet().forEach(uuid -> {
-            JSONObject userObject = new JSONObject();
-            User user = userHashMap.get(uuid);
-            userObject.put("uuid", uuid.toString());
-            userObject.put("queuedVotes", user.getQueuedVotes());
-            userObject.put("votes", user.getVotes());
-            if (user.getLastVoteDate() == null) {
-                userObject.put("lastVoteDate", "null");
-            } else {
-                userObject.put("lastVoteDate", user.getLastVoteDate().toString());
+            try {
+                JSONObject userObject = new JSONObject();
+                User user = userHashMap.get(uuid);
+                userObject.put("uuid", uuid.toString());
+                userObject.put("queuedVotes", user.getQueuedVotes());
+                userObject.put("votes", user.getVotes());
+                if (user.getLastVoteDate() == null) {
+                    userObject.put("lastVoteDate", "null");
+                } else {
+                    userObject.put("lastVoteDate", user.getLastVoteDate().toString());
+                }
+                array.add(userObject);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            array.add(userObject);
         });
 
         FileUtil.writeJsonToFile(array, FileUtil.getFileAndCreate(dir, "votes.json"));
