@@ -1,6 +1,7 @@
 package de.hakuyamu.skybee.votesystem.models;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -39,6 +40,7 @@ public class User {
         this.votes = votes;
     }
 
+    @Nullable
     public LocalDate getLastVoteDate() {
         return lastVoteDate;
     }

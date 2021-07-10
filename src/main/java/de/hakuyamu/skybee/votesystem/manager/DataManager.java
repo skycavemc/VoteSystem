@@ -41,11 +41,17 @@ public class DataManager {
                     try {
                         JSONObject userObject = (JSONObject) object;
                         UUID uuid = UUID.fromString((String) userObject.get("uuid"));
+                        LocalDate lastVoteDate;
+                        if (userObject.get("lastVoteDate").equals("null")) {
+                            lastVoteDate = null;
+                        } else {
+                            lastVoteDate = LocalDate.parse((String) userObject.get("lastVoteDate"));
+                        }
                         User user = new User(
                                 uuid,
                                 (long) userObject.get("queuedVotes"),
                                 (long) userObject.get("votes"),
-                                LocalDate.parse((String) userObject.get("lastVoteDate"))
+                                lastVoteDate
                         );
                         userHashMap.put(uuid, user);
                     } catch (Exception e) {
@@ -96,7 +102,11 @@ public class DataManager {
             userObject.put("uuid", uuid.toString());
             userObject.put("queuedVotes", user.getQueuedVotes());
             userObject.put("votes", user.getVotes());
-            userObject.put("lastVoteDate", user.getLastVoteDate().toString());
+            if (user.getLastVoteDate() == null) {
+                userObject.put("lastVoteDate", "null");
+            } else {
+                userObject.put("lastVoteDate", user.getLastVoteDate().toString());
+            }
             array.add(userObject);
         });
 
