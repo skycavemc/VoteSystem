@@ -8,11 +8,11 @@ import java.util.HashMap;
 public class Event {
 
     private final HashMap<EventReward, LocalDateTime> zielCompletion;
-    private boolean eventStarted = false;
-    private boolean weekStarted = false;
-    private long voteCount = 0;
-    private LocalDateTime startDate = null;
-    private LocalDateTime endDate = null;
+    private boolean eventStarted;
+    private boolean weekStarted;
+    private long voteCount;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
 
     public Event(
             HashMap<EventReward, LocalDateTime> eventCompletion,

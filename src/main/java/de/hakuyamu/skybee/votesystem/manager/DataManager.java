@@ -75,14 +75,30 @@ public class DataManager {
                     }
                 });
 
+                final LocalDateTime startDate;
+                final String rawStartDate = (String) object.get("startDate");
+                if (rawStartDate.equalsIgnoreCase("null")) {
+                    startDate = null;
+                } else {
+                    startDate = LocalDateTime.parse(rawStartDate);
+                }
+
+                final LocalDateTime endDate;
+                final String rawEndDate = (String) object.get("endDate");
+                if (rawEndDate.equalsIgnoreCase("null")) {
+                    endDate = null;
+                } else {
+                    endDate = LocalDateTime.parse(rawEndDate);
+                }
+
                 // setting the event object
                 event = new Event(
                         eventTimes,
                         Boolean.parseBoolean((String) object.get("eventStarted")),
                         Boolean.parseBoolean((String) object.get("weekStarted")),
                         (long) object.get("voteCount"),
-                        LocalDateTime.parse((String) object.get("startDate")),
-                        LocalDateTime.parse((String) object.get("endDate"))
+                        startDate,
+                        endDate
                 );
             }
         } catch (Exception e) {
@@ -131,16 +147,30 @@ public class DataManager {
                 }
             });
 
+            final String startDate;
+            if (event.getStartDate() == null) {
+                startDate = "null";
+            } else {
+                startDate = event.getStartDate().toString();
+            }
+
+            final String endDate;
+            if (event.getEndDate() == null) {
+                endDate = "null";
+            } else {
+                endDate = event.getStartDate().toString();
+            }
+
             object.put("eventStarted", Boolean.toString(event.isStarted()));
             object.put("weekStarted", Boolean.toString(event.isWeekStarted()));
             object.put("voteCount", event.getVoteCount());
-            object.put("startDate", event.getStartDate().toString());
-            object.put("endDate", event.getEndDate().toString());
+            object.put("startDate", startDate);
+            object.put("endDate", endDate);
             object.put("zielCompletion", zielCompletion);
 
             FileUtil.writeJsonToFile(object, FileUtil.getFileAndCreate(dir, "event.json"));
         } catch (NullPointerException e) {
-            main.getLogger().warning("Some data was corrupted.");
+            e.printStackTrace();
         }
     }
 
