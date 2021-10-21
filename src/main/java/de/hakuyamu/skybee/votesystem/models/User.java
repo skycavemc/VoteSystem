@@ -45,6 +45,14 @@ public class User {
         return lastVoteDate;
     }
 
+    public String getLastVoteString() {
+        if (lastVoteDate == null) {
+            return "null";
+        } else {
+            return lastVoteDate.toString();
+        }
+    }
+
     public void setLastVoteDate(LocalDate lastVoteDate) {
         this.lastVoteDate = lastVoteDate;
     }

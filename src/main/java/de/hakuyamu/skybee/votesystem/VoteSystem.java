@@ -1,11 +1,13 @@
 package de.hakuyamu.skybee.votesystem;
 
+import com.mongodb.MongoClient;
 import de.hakuyamu.skybee.votesystem.commands.VoteAdminCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteCommand;
 import de.hakuyamu.skybee.votesystem.enums.EventStartScript;
 import de.hakuyamu.skybee.votesystem.enums.EventStopScript;
 import de.hakuyamu.skybee.votesystem.listener.PlayerJoinListener;
 import de.hakuyamu.skybee.votesystem.listener.VotifierListener;
+import de.hakuyamu.skybee.votesystem.manager.DBManager;
 import de.hakuyamu.skybee.votesystem.manager.DataManager;
 import de.hakuyamu.skybee.votesystem.runnables.VoteBroadcast;
 import de.hakuyamu.skybee.votesystem.runnables.VoteEventBroadcast;
@@ -22,11 +24,14 @@ import java.io.IOException;
 public final class VoteSystem extends JavaPlugin {
 
     private DataManager dataManager;
+    private DBManager dbManager;
 
     @Override
     public void onEnable() {
         createScripts();
         dataManager = new DataManager(this);
+        dbManager = new DBManager();
+        dbManager.setup();
 
         new VoteBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(10), TimeUtil.minutesToTicks(20));
         new VoteEventBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(20), TimeUtil.minutesToTicks(20));
@@ -46,6 +51,10 @@ public final class VoteSystem extends JavaPlugin {
 
     public DataManager getDataManager() {
         return dataManager;
+    }
+
+    public DBManager getDbManager() {
+        return dbManager;
     }
 
     private void createScripts() {
