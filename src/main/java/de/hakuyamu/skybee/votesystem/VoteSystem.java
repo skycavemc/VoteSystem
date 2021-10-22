@@ -1,6 +1,5 @@
 package de.hakuyamu.skybee.votesystem;
 
-import com.mongodb.MongoClient;
 import de.hakuyamu.skybee.votesystem.commands.VoteAdminCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteCommand;
 import de.hakuyamu.skybee.votesystem.enums.EventStartScript;
@@ -47,6 +46,7 @@ public final class VoteSystem extends JavaPlugin {
     @Override
     public void onDisable() {
         dataManager.save();
+        dbManager.shutdown();
     }
 
     public DataManager getDataManager() {

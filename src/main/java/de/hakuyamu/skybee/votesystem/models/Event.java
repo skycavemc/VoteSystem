@@ -1,13 +1,15 @@
 package de.hakuyamu.skybee.votesystem.models;
 
 import de.hakuyamu.skybee.votesystem.enums.EventReward;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Map;
 
 public class Event {
 
-    private final HashMap<EventReward, LocalDateTime> zielCompletion;
+    private final Map<EventReward, LocalDateTime> zielCompletion;
     private boolean eventStarted;
     private boolean weekStarted;
     private long voteCount;
@@ -30,7 +32,7 @@ public class Event {
         this.endDate = endDate;
     }
 
-    public HashMap<EventReward, LocalDateTime> getEventCompletion() {
+    public Map<EventReward, LocalDateTime> getEventCompletion() {
         return zielCompletion;
     }
 
@@ -58,16 +60,34 @@ public class Event {
         this.voteCount = voteCount;
     }
 
+    @Nullable
     public LocalDateTime getStartDate() {
         return startDate;
+    }
+
+    public String getStartDateString() {
+        if (startDate == null) {
+            return "null";
+        } else {
+            return startDate.toString();
+        }
     }
 
     public void setStartDate(LocalDateTime startDate) {
         this.startDate = startDate;
     }
 
+    @Nullable
     public LocalDateTime getEndDate() {
         return endDate;
+    }
+
+    public String getEndDateString() {
+        if (endDate == null) {
+            return "null";
+        } else {
+            return endDate.toString();
+        }
     }
 
     public void setEndDate(LocalDateTime endDate) {
