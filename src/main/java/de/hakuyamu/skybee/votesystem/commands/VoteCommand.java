@@ -110,7 +110,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                     if (user == null) {
                         sender.sendMessage(Message.VOTE_COUNT_OTHER.getString()
                                 .replace("%player", args[1])
-                                .replace("%votes", "0").get(false));
+                                .replace("%votes", "0").get());
                     } else {
                         sender.sendMessage(Message.VOTE_COUNT_OTHER.getString()
                                 .replace("%player", args[1])
