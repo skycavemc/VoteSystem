@@ -1,10 +1,12 @@
 package de.hakuyamu.skybee.votesystem.listener;
 
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
-import de.hakuyamu.skybee.votesystem.manager.DBManager;
-import de.hakuyamu.skybee.votesystem.models.User;
 import de.hakuyamu.skybee.votesystem.util.VoteUtil;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -22,23 +24,21 @@ public class PlayerJoinListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
-
-        DBManager dbManager = main.getDbManager();
-        dbManager.getUsers(Filters.eq("uuid", uuid.toString()));
-        // if the user is not registered, there is nothing to do expect from registering them
-        if (!main.getDataManager().isRegistered(uuid)) {
-            main.getDataManager().createUser(uuid);
+        Bson filter = Filters.eq("uuid", uuid.toString());
+        MongoDatabase db = main.getDbManager().getDatabase();
+        Document user = db.getCollection("users").find(filter).first();
+        if (user == null) {
             return;
         }
 
-        // give missed vote rewards due to offline voting
-        User user = main.getDataManager().getUser(uuid);
-        for (int i = 0; i < user.getQueuedVotes(); i++) {
-            VoteUtil.vote(event.getPlayer());
+        long votes = (Long) user.get("votes");
+        for (int i = 0; i < (Long) user.get("queuedVotes"); i++) {
+            votes += 1L;
+            db.getCollection("users").updateOne(filter, Updates.set("votes", votes));
+            VoteUtil.giveVoteRewards(event.getPlayer());
         }
 
-        // there should be no votes left in the queue
-        user.setQueuedVotes(0);
+        db.getCollection("users").updateOne(filter, Updates.set("queuedVotes", 0L));
     }
 
 }

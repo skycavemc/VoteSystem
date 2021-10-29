@@ -7,11 +7,10 @@ import de.hakuyamu.skybee.votesystem.util.VoteUtil;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
-public class VotifierListener implements Listener {
+public class IncomingVoteListener implements Listener {
 
     @EventHandler
-    public void onVotifier(VotifierEvent event) {
-        // check if the vote comes from a trusted service
+    public void onVote(VotifierEvent event) {
         Vote vote = event.getVote();
         if (!TrustedServices.isListed(vote.getServiceName())) {
             return;

@@ -1,11 +1,19 @@
 package de.hakuyamu.skybee.votesystem.commands;
 
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Sorts;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.EventReward;
 import de.hakuyamu.skybee.votesystem.enums.Message;
 import de.hakuyamu.skybee.votesystem.enums.PersonalReward;
 import de.hakuyamu.skybee.votesystem.enums.TrustedServices;
 import de.hakuyamu.skybee.votesystem.util.VoteUtil;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -15,10 +23,7 @@ import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class VoteCommand implements CommandExecutor, TabCompleter {
 
@@ -38,42 +43,125 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
         Player player = (Player) sender;
 
         if (args.length < 1) {
-            player.sendMessage("");
-            player.sendMessage(TrustedServices.MINECRAFT_SERVER_EU.getBaseComponent(player.getName()));
-            player.sendMessage(TrustedServices.MINECRAFT_SERVERLIST_NET.getBaseComponent(player.getName()));
-            player.sendMessage(TrustedServices.SERVERLISTE_NET.getBaseComponent(player.getName()));
-            player.sendMessage(Message.VOTE_INFO1.getMessage());
-            player.sendMessage(Message.VOTE_INFO2.getMessage());
-            player.sendMessage(Message.VOTE_INFO3.getMessage());
-            player.sendMessage("");
+            sender.sendMessage("");
+            sender.sendMessage(TrustedServices.MINECRAFT_SERVER_EU.getVoteLink(player.getName()));
+            sender.sendMessage(TrustedServices.MINECRAFT_SERVERLIST_NET.getVoteLink(player.getName()));
+            sender.sendMessage(TrustedServices.SERVERLISTE_NET.getVoteLink(player.getName()));
+            sender.sendMessage(Message.VOTE_INFO1.getString().get(false));
+            sender.sendMessage(Message.VOTE_INFO2.getString().get(false));
+            sender.sendMessage(Message.VOTE_INFO3.getString().get(false));
+            sender.sendMessage("");
             return true;
         }
 
+        MongoCollection<Document> userCollection = main.getDbManager().getDatabase().getCollection("users");
+
         switch (args[0]) {
             case "event":
-                player.sendMessage("");
-                player.sendMessage(VoteUtil.getVoteEventStatus());
-                player.sendMessage("");
+                sender.sendMessage("");
+                sender.sendMessage(VoteUtil.getVoteEventStatus());
+                sender.sendMessage("");
                 for (EventReward reward : EventReward.values()) {
-                    player.sendMessage(VoteUtil.getVoteEventLine(reward));
+                    sender.sendMessage(VoteUtil.getVoteEventLine(reward));
                 }
                 break;
             case "ziel":
-                UUID uuid = player.getUniqueId();
                 sender.sendMessage("");
-                sender.sendMessage(VoteUtil.getVoteZielStatus(uuid));
+                sender.sendMessage(VoteUtil.getVoteZielStatus(player));
                 sender.sendMessage("");
                 for (PersonalReward reward : PersonalReward.values()) {
-                    sender.sendMessage(VoteUtil.getVoteZielLine(uuid, reward));
+                    sender.sendMessage(VoteUtil.getVoteZielLine(player, reward));
                 }
                 break;
             case "help":
-                sender.sendMessage(Message.VOTE_HELP.getMessage());
-                sender.sendMessage(Message.VOTE_HELP_EVENT.getMessage());
-                sender.sendMessage(Message.VOTE_HELP_ZIEL.getMessage());
+                sender.sendMessage(Message.VOTE_HELP.getString().get(false));
+                sender.sendMessage(Message.VOTE_HELP_EVENT.getString().get(false));
+                sender.sendMessage(Message.VOTE_HELP_ZIEL.getString().get(false));
                 break;
+            case "count":
+                if (args.length < 2) {
+                    UUID uuid = player.getUniqueId();
+                    Bson filter = Filters.eq("uuid", uuid.toString());
+                    Document user = userCollection.find(filter).first();
+                    if (user == null) {
+                        sender.sendMessage(Message.VOTE_COUNT.getString()
+                                .replace("%votes", "0").get());
+                    } else {
+                        sender.sendMessage(Message.VOTE_COUNT.getString()
+                                .replace("%votes", String.valueOf(user.get("votes"))).get());
+                    }
+                } else {
+                    Player other = Bukkit.getPlayer(args[1]);
+                    UUID uuid;
+                    if (other == null || !other.isOnline()) {
+                        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayerIfCached(args[2]);
+                        if (offlinePlayer == null) {
+                            sender.sendMessage(Message.PLAYER_NOT_FOUND.getString()
+                                    .replace("%player", args[1]).get());
+                            return true;
+                        }
+                        uuid = offlinePlayer.getUniqueId();
+                    } else {
+                        uuid = player.getUniqueId();
+                    }
+
+                    Bson filter = Filters.eq("uuid", uuid.toString());
+                    Document user = userCollection.find(filter).first();
+                    if (user == null) {
+                        sender.sendMessage(Message.VOTE_COUNT_OTHER.getString()
+                                .replace("%player", args[1])
+                                .replace("%votes", "0").get());
+                    } else {
+                        sender.sendMessage(Message.VOTE_COUNT_OTHER.getString()
+                                .replace("%player", args[1])
+                                .replace("%votes", String.valueOf(user.get("votes"))).get());
+                    }
+                }
+                break;
+            case "top":
+                int page;
+                if (args.length < 2) {
+                    page = 1;
+                } else {
+                    try {
+                        page = Integer.parseInt(args[1]);
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(Message.INVALID_NUMBER.getString().get());
+                        return true;
+                    }
+                }
+
+                long entries = userCollection.countDocuments(Filters.exists("votes"));
+                int pages = (int) (entries % 10 + 1);
+                if (page > pages) {
+                    page = pages;
+                }
+                int skip = (page - 1) * 10;
+
+                List<Document> users = userCollection.find(Filters.exists("votes"))
+                        .sort(Sorts.descending("votes"))
+                        .skip(skip)
+                        .limit(10)
+                        .into(new ArrayList<>());
+
+                sender.sendMessage(Message.VOTE_TOP_HEADER_FOOTER.getString()
+                        .replace("%page", String.valueOf(page))
+                        .replace("%amount", String.valueOf(pages)).get());
+                int rank = skip + 1;
+                for (Document user : users) {
+                    UUID uuid = UUID.fromString((String) user.get("uuid"));
+                    String name = Bukkit.getOfflinePlayer(uuid).getName();
+                    sender.sendMessage(Message.VOTE_TOP_ENTRY.getString()
+                            .replace("%rank", String.valueOf(rank))
+                            .replace("%player", name)
+                            .replace("%votes", String.valueOf(user.get("votes"))).get());
+                    rank++;
+                }
+                sender.sendMessage(Message.VOTE_TOP_HEADER_FOOTER.getString()
+                        .replace("%page", String.valueOf(page))
+                        .replace("%amount", String.valueOf(pages)).get());
             default:
-                sender.sendMessage(Message.VOTE_WRONG_ARGS.getWithPrefix());
+                sender.sendMessage(Message.VOTE_WRONG_ARGS.getString().get());
         }
 
         return true;
@@ -88,6 +176,8 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
             arguments.add("help");
             arguments.add("event");
             arguments.add("ziel");
+            arguments.add("count");
+            arguments.add("top");
 
             StringUtil.copyPartialMatches(args[0], arguments, completions);
         }

@@ -1,7 +1,10 @@
 package de.hakuyamu.skybee.votesystem.enums;
 
-import de.hakuyamu.skybee.votesystem.models.CustomText;
 import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 
 public enum TrustedServices {
 
@@ -32,8 +35,13 @@ public enum TrustedServices {
         return service;
     }
 
-    public BaseComponent getBaseComponent(String name) {
-        return new CustomText("§8» §2Link " + number + ": ", "§e§nKlicke hier", url + name, "§aKlicke, um Vote " + number + " aufzurufen!").getResult();
+    public BaseComponent getVoteLink(String name) {
+        TextComponent result = new TextComponent(TextComponent.fromLegacyText("§8» §2Link " + number + ": "));
+        TextComponent extra = new TextComponent(TextComponent.fromLegacyText("§e§nKlicke hier"));
+        extra.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url + name));
+        extra.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aKlicke, um Vote " + number + " aufzurufen!")));
+        result.addExtra(extra);
+        return result;
     }
 
     public static boolean isListed(String service) {

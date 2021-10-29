@@ -1,10 +1,12 @@
 package de.hakuyamu.skybee.votesystem.enums;
 
-import org.bukkit.ChatColor;
+import de.hakuyamu.skybee.votesystem.models.FormattableString;
 
 public enum Message {
 
-    PREFIX("&a&l| &2Vote &8» "),
+    DATABASE_ERROR("&cIm Datenbanksystem liegt ein Fehler vor."),
+    PLAYER_NOT_FOUND("&cDer Spieler %player konnte nicht gefunden werden."),
+    INVALID_NUMBER("&c%number ist keine gültige Zahl."),
 
     // vote rewards
     VOTE_DEFAULT("&b&k!!!&r &3%player &7hat gevoted und &610 &ePollen &7erhalten! &3/vote"),
@@ -38,6 +40,14 @@ public enum Message {
     VOTE_ZIEL_LINE_NOT("&7%numeral. &c%votes Votes &8= &c%name"),
     VOTE_ZIEL_LINE_DONE("&7%numeral. &a%votes Votes &8= &a%name &2✔"),
 
+    // vote count subcommand
+    VOTE_COUNT("&aDu hast momentan &6%votes Votes&a."),
+    VOTE_COUNT_OTHER("&6%player &ahat momentan &6%votes Votes&a."),
+
+    // vote top subcommand
+    VOTE_TOP_HEADER_FOOTER("&8>&7--------&8[ &a%page&2/&a%amount &8]&7--------&8<"),
+    VOTE_TOP_ENTRY("&6%rank. &a%player: &e%votes Votes"),
+
     // voteadmin command
     VADMIN_WRONG_ARGS("&cUngültiges Argument. Siehe /voteadmin help"),
 
@@ -50,7 +60,7 @@ public enum Message {
     // voteadmin start subcommand
     VADMIN_START_FIRST("&e&lDas &2&lVote&d&lEvent &e&lwurde gestartet!"),
     VADMIN_START_ALREADY("&cDas Vote Event läuft bereits."),
-    VADMIN_START_WEEK("&eDiese Woche ist kein Vote Event geplant."),
+    VADMIN_START_WEEK("&eDiese Woche wird übersprungen."),
 
     // voteadmin stop subcommand
     VADMIN_STOP_SUCCESS("&aDu hast das Vote Event gestoppt."),
@@ -64,18 +74,14 @@ public enum Message {
     VADMIN_FAKE_EXE("&aFühre Fake Vote für %name aus..."),
     ;
 
-    private final String message;
+    private final String string;
 
-    Message(String message) {
-        this.message = message;
+    Message(String string) {
+        this.string = string;
     }
 
-    public String getMessage() {
-        return ChatColor.translateAlternateColorCodes('&', message);
-    }
-
-    public String getWithPrefix() {
-        return ChatColor.translateAlternateColorCodes('&', PREFIX.getMessage() + message);
+    public FormattableString getString() {
+        return new FormattableString(string);
     }
 
 }

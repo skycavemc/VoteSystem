@@ -1,8 +1,11 @@
 package de.hakuyamu.skybee.votesystem.runnables;
 
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
-import de.hakuyamu.skybee.votesystem.models.User;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -20,18 +23,23 @@ public class VoteBroadcast extends BukkitRunnable {
     @Override
     public void run() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!main.getDataManager().isRegistered(player.getUniqueId())) {
-                player.sendMessage(Message.VOTE_BROADCAST.getWithPrefix().replaceAll("%votes", "0"));
+            Bson filter = Filters.eq("uuid", player.getUniqueId());
+            MongoDatabase db = main.getDbManager().getDatabase();
+            Document user = db.getCollection("users").find(filter).first();
+
+            if (user == null) {
+                player.sendMessage(Message.VOTE_BROADCAST.getString()
+                        .replace("%votes", "0").get());
                 continue;
             }
 
-            User user = main.getDataManager().getUser(player.getUniqueId());
-            LocalDate lastVoteDate = user.getLastVoteDate();
+            LocalDate lastVoteDate = LocalDate.parse((String) user.get("lastVoteDate"));
             if (lastVoteDate == null || lastVoteDate.compareTo(LocalDate.now()) == 0) {
                 continue;
             }
 
-            player.sendMessage(Message.VOTE_BROADCAST.getWithPrefix().replaceAll("%votes", String.valueOf(user.getVotes())));
+            player.sendMessage(Message.VOTE_BROADCAST.getString()
+                    .replace("%votes", String.valueOf(user.get("votes"))).get());
         }
     }
 
