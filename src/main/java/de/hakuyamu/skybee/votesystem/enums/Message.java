@@ -45,8 +45,9 @@ public enum Message {
     VOTE_COUNT_OTHER("&6%player &ahat momentan &6%votes Votes&a."),
 
     // vote top subcommand
-    VOTE_TOP_HEADER_FOOTER("&8>&7--------&8[ &a%page&2/&a%amount &8]&7--------&8<"),
+    VOTE_TOP_HEADER_FOOTER("&8>&7------------&8[ &a%page&2/&a%amount &8]&7------------&8<"),
     VOTE_TOP_ENTRY("&6%rank. &a%player: &e%votes Votes"),
+    VOTE_TOP_NO_ENTRIES("&cEs sind keine Einträge vorhanden."),
 
     // voteadmin command
     VADMIN_WRONG_ARGS("&cUngültiges Argument. Siehe /voteadmin help"),

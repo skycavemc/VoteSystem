@@ -94,7 +94,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                     Player other = Bukkit.getPlayer(args[1]);
                     UUID uuid;
                     if (other == null || !other.isOnline()) {
-                        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayerIfCached(args[2]);
+                        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayerIfCached(args[1]);
                         if (offlinePlayer == null) {
                             sender.sendMessage(Message.PLAYER_NOT_FOUND.getString()
                                     .replace("%player", args[1]).get());
@@ -110,7 +110,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                     if (user == null) {
                         sender.sendMessage(Message.VOTE_COUNT_OTHER.getString()
                                 .replace("%player", args[1])
-                                .replace("%votes", "0").get());
+                                .replace("%votes", "0").get(false));
                     } else {
                         sender.sendMessage(Message.VOTE_COUNT_OTHER.getString()
                                 .replace("%player", args[1])
@@ -132,13 +132,18 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                 }
 
                 long entries = userCollection.countDocuments(Filters.exists("votes"));
-                int pages = (int) (entries % 10 + 1);
+                if (entries <= 0) {
+                    sender.sendMessage(Message.VOTE_TOP_NO_ENTRIES.getString().get());
+                    return true;
+                }
+
+                int pages = (int) (entries / 10 + 1);
                 if (page > pages) {
                     page = pages;
                 }
                 int skip = (page - 1) * 10;
 
-                List<Document> users = userCollection.find(Filters.exists("votes"))
+                List<Document> users = userCollection.find(Filters.gt("votes", 0L))
                         .sort(Sorts.descending("votes"))
                         .skip(skip)
                         .limit(10)
@@ -146,7 +151,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
 
                 sender.sendMessage(Message.VOTE_TOP_HEADER_FOOTER.getString()
                         .replace("%page", String.valueOf(page))
-                        .replace("%amount", String.valueOf(pages)).get());
+                        .replace("%amount", String.valueOf(pages)).get(false));
                 int rank = skip + 1;
                 for (Document user : users) {
                     UUID uuid = UUID.fromString((String) user.get("uuid"));
@@ -154,12 +159,13 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Message.VOTE_TOP_ENTRY.getString()
                             .replace("%rank", String.valueOf(rank))
                             .replace("%player", name)
-                            .replace("%votes", String.valueOf(user.get("votes"))).get());
+                            .replace("%votes", String.valueOf(user.get("votes"))).get(false));
                     rank++;
                 }
                 sender.sendMessage(Message.VOTE_TOP_HEADER_FOOTER.getString()
                         .replace("%page", String.valueOf(page))
-                        .replace("%amount", String.valueOf(pages)).get());
+                        .replace("%amount", String.valueOf(pages)).get(false));
+                break;
             default:
                 sender.sendMessage(Message.VOTE_WRONG_ARGS.getString().get());
         }
@@ -178,8 +184,14 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
             arguments.add("ziel");
             arguments.add("count");
             arguments.add("top");
-
             StringUtil.copyPartialMatches(args[0], arguments, completions);
+        }
+
+        if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("count")) {
+                Bukkit.getOnlinePlayers().forEach(player -> arguments.add(player.getName()));
+                StringUtil.copyPartialMatches(args[1], arguments, completions);
+            }
         }
 
         Collections.sort(completions);
