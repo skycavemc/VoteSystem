@@ -1,4 +1,4 @@
-name: SkyBeeVoteSystem
+name: VoteSystem
 version: ${project.version}
 main: de.hakuyamu.skybee.votesystem.VoteSystem
 api-version: 1.16
