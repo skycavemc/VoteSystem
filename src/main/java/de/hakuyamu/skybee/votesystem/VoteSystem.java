@@ -26,8 +26,8 @@ public final class VoteSystem extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        File dir = new File("plugins/VoteSystem/");
-        if (!dir.exists()) {
+        File dir = getDataFolder();
+        if (!dir.isDirectory()) {
             dir.mkdirs();
 
             File start = new File(dir, "start_event.sh");
