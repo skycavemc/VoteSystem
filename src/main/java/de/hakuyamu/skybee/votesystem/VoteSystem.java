@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import org.bson.Document;
 import org.bukkit.Bukkit;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -47,15 +48,23 @@ public final class VoteSystem extends JavaPlugin {
             eventDocs.insertOne(EventAdaptor.generateNewEvent());
         }
 
-        new VoteBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(10), TimeUtil.minutesToTicks(20));
-        new VoteEventBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(20), TimeUtil.minutesToTicks(20));
+        new VoteBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(10),
+            TimeUtil.minutesToTicks(20));
+        new VoteEventBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(20),
+            TimeUtil.minutesToTicks(20));
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new IncomingVoteListener(), this);
         pm.registerEvents(new PlayerJoinListener(this), this);
 
-        getCommand("voteadmin").setExecutor(new VoteAdminCommand(this));
-        getCommand("vote").setExecutor(new VoteCommand(this));
+        PluginCommand command = getCommand("voteadmin");
+        if (command != null) {
+            command.setExecutor(new VoteAdminCommand(this));
+        }
+        command = getCommand("vote");
+        if(command != null) {
+            command.setExecutor(new VoteCommand(this));
+        }
     }
 
     private void extractFile(File dir, String resource) throws IOException {
@@ -64,7 +73,7 @@ public final class VoteSystem extends JavaPlugin {
             return;
         }
         InputStream stream = getResource(start.getName());
-        if(stream == null) {
+        if (stream == null) {
             getLogger().warning(String.format("Missing \"%s\" file in resources.", resource));
             return;
         }
