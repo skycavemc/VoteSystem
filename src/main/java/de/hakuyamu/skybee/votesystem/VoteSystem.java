@@ -48,9 +48,9 @@ public final class VoteSystem extends JavaPlugin {
             eventDocs.insertOne(EventAdaptor.generateNewEvent());
         }
 
-        new VoteBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(10),
+        new VoteBroadcast(this).runTaskTimerAsynchronously(this, TimeUtil.minutesToTicks(10),
             TimeUtil.minutesToTicks(20));
-        new VoteEventBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(20),
+        new VoteEventBroadcast(this).runTaskTimerAsynchronously(this, TimeUtil.minutesToTicks(20),
             TimeUtil.minutesToTicks(20));
 
         PluginManager pm = Bukkit.getPluginManager();
