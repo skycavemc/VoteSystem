@@ -1,6 +1,7 @@
 package de.hakuyamu.skybee.votesystem;
 
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import de.hakuyamu.skybee.votesystem.commands.VoteAdminCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteCommand;
 import de.hakuyamu.skybee.votesystem.listener.IncomingVoteListener;
@@ -10,15 +11,16 @@ import de.hakuyamu.skybee.votesystem.runnables.VoteBroadcast;
 import de.hakuyamu.skybee.votesystem.runnables.VoteEventBroadcast;
 import de.hakuyamu.skybee.votesystem.util.EventAdaptor;
 import de.hakuyamu.skybee.votesystem.util.TimeUtil;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 
 public final class VoteSystem extends JavaPlugin {
 
@@ -43,19 +45,21 @@ public final class VoteSystem extends JavaPlugin {
         dbManager = new DBManager();
         dbManager.connect();
 
-        MongoCollection<Document> eventDocs = dbManager.getDatabase().getCollection("event");
+        MongoDatabase database = dbManager.getDatabase();
+        MongoCollection<Document> eventDocs = database.getCollection("event");
         if (eventDocs.countDocuments() < 1) {
             eventDocs.insertOne(EventAdaptor.generateNewEvent());
         }
+        MongoCollection<Document> usersCollection = database.getCollection("users");
 
-        new VoteBroadcast(this).runTaskTimerAsynchronously(this, TimeUtil.minutesToTicks(10),
+        new VoteBroadcast(database.getCollection("users")).runTaskTimerAsynchronously(this, TimeUtil.minutesToTicks(10),
             TimeUtil.minutesToTicks(20));
-        new VoteEventBroadcast(this).runTaskTimerAsynchronously(this, TimeUtil.minutesToTicks(20),
+        new VoteEventBroadcast(eventDocs).runTaskTimerAsynchronously(this, TimeUtil.minutesToTicks(20),
             TimeUtil.minutesToTicks(20));
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new IncomingVoteListener(), this);
-        pm.registerEvents(new PlayerJoinListener(this), this);
+        pm.registerEvents(new PlayerJoinListener(this, usersCollection), this);
 
         PluginCommand command = getCommand("voteadmin");
         if (command != null) {

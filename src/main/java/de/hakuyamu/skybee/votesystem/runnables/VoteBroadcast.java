@@ -1,35 +1,39 @@
 package de.hakuyamu.skybee.votesystem.runnables;
 
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
-import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.time.LocalDate;
-
 public class VoteBroadcast extends BukkitRunnable {
 
-    private final VoteSystem main;
+    private final MongoCollection<Document> collection;
 
-    public VoteBroadcast(VoteSystem main) {
-        this.main = main;
+    public VoteBroadcast(MongoCollection<Document> collection) {
+        this.collection = collection;
     }
 
     @Override
     public void run() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            Bson filter = Filters.eq("uuid", player.getUniqueId());
-            MongoDatabase db = main.getDbManager().getDatabase();
-            Document user = db.getCollection("users").find(filter).first();
 
-            if (user == null) {
-                player.sendMessage(Message.VOTE_BROADCAST.getString()
-                        .replace("%votes", "0").get());
+        List<UUID> uuidList = Bukkit.getOnlinePlayers().stream().map(Player::getUniqueId)
+            .collect(Collectors.toList());
+
+        FindIterable<Document> users = collection.find(Filters.all("uuid", uuidList));
+        for (Document user : users) {
+            UUID uuid = user.get("uuid", UUID.class);
+            uuidList.remove(uuid);
+
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
                 continue;
             }
 
@@ -39,7 +43,15 @@ public class VoteBroadcast extends BukkitRunnable {
             }
 
             player.sendMessage(Message.VOTE_BROADCAST.getString()
-                    .replace("%votes", String.valueOf(user.get("votes"))).get());
+                .replace("%votes", String.valueOf(user.get("votes"))).get());
+        }
+
+        for (UUID uuid : uuidList) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null) {
+                continue;
+            }
+            player.sendMessage(Message.VOTE_BROADCAST.getString().replace("%votes", "0").get());
         }
     }
 

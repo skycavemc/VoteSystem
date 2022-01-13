@@ -52,31 +52,31 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
 
         switch (args[0]) {
             case "start":
-                if (Boolean.parseBoolean((String) event.get("started"))) {
+                if (event.getBoolean("started")) {
                     sender.sendMessage(Message.VADMIN_START_ALREADY.getString().get());
                     break;
                 }
-                if (Boolean.parseBoolean((String) event.get("skipNextWeek"))) {
+                if (event.getBoolean("skipNextWeek")) {
                     sender.sendMessage(Message.VADMIN_START_WEEK.getString().get());
-                    db.getCollection("event").updateOne(filter, Updates.set("skipNextWeek", "false"));
+                    db.getCollection("event").updateOne(filter, Updates.set("skipNextWeek", false));
                     break;
                 }
                 db.getCollection("users").drop();
                 db.getCollection("event").updateOne(filter, Updates.combine(
-                        Updates.set("started", "true"),
-                        Updates.set("skipNextWeek", "true"),
+                        Updates.set("started", true),
+                        Updates.set("skipNextWeek", true),
                         Updates.set("start", LocalDateTime.now().toString())));
                 Bukkit.broadcastMessage("");
                 Bukkit.broadcastMessage(Message.VADMIN_START_FIRST.getString().get(false));
                 Bukkit.broadcastMessage("");
                 break;
             case "stop":
-                if (!Boolean.parseBoolean((String) event.get("started"))) {
+                if (!event.getBoolean("started")) {
                     sender.sendMessage(Message.VADMIN_STOP_NOT.getString().get());
                     break;
                 }
                 db.getCollection("event").updateOne(filter, Updates.combine(
-                        Updates.set("started", "false"),
+                        Updates.set("started", false),
                         Updates.set("end", LocalDateTime.now().toString())));
                 sender.sendMessage(Message.VADMIN_STOP_SUCCESS.getString().get());
                 break;

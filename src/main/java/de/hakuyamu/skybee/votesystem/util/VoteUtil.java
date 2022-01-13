@@ -1,5 +1,6 @@
 package de.hakuyamu.skybee.votesystem.util;
 
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
@@ -26,36 +27,35 @@ public class VoteUtil {
 
     private static final VoteSystem main = JavaPlugin.getPlugin(VoteSystem.class);
 
-    public static void processVote(String name) {
+    public static void processVote(String username) {
         MongoDatabase db = main.getDbManager().getDatabase();
-        Player player = Bukkit.getPlayer(name);
-        UUID uuid;
-        boolean offline = false;
 
-        if (player == null || !player.isOnline()) {
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayerIfCached(name);
-            if (offlinePlayer == null) {
-                return;
-            }
-            uuid = offlinePlayer.getUniqueId();
-            offline = true;
-        } else {
-            uuid = player.getUniqueId();
-        }
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayerIfCached(username);
+        if (offlinePlayer == null)
+            return;
 
-        updateUser(db, uuid, offline);
+        UUID uuid = offlinePlayer.getUniqueId();
+        Player player = offlinePlayer.getPlayer();
+        boolean offline = player == null;
+
+        long votes = updateUser(db, uuid, offline);
         updateEvent(db);
 
         if (!offline) {
-            main.getLogger().info(name + " voted for the server.");
-            giveVoteRewards(player);
+            main.getLogger().info(username + " voted for the server.");
+            giveVoteRewards(player, votes);
             return;
         }
 
-        main.getLogger().info(name + " voted for the server, vote saved in their queue.");
+        main.getLogger().info(username + " voted for the server, vote saved in their queue.");
     }
 
-    private static void updateUser(MongoDatabase db, UUID uuid, boolean offline) {
+    /**
+     * Increase the votes or votes in queue in the database.
+     *
+     * @return the current votes
+     */
+    private static long updateUser(MongoDatabase db, UUID uuid, boolean offline) {
         Bson filter = Filters.eq("uuid", uuid.toString());
         Document user = db.getCollection("users").find(filter).first();
         if (user == null) {
@@ -63,14 +63,13 @@ public class VoteUtil {
             db.getCollection("users").insertOne(user);
         }
 
-        Bson update;
-        if (offline) {
-            update = Updates.set("queuedVotes", (Long) user.get("queuedVotes") + 1L);
-        } else {
-            update = Updates.set("votes", (Long) user.get("votes") + 1L);
-        }
-        db.getCollection("users").updateOne(filter,
-                Updates.combine(Updates.set("lastVoteDate", LocalDate.now().toString()), update));
+        Bson update = Updates.inc(offline ? "queuedVotes" : "votes", 1); // Increase votes in queue when the player is offline
+        db.getCollection("users").
+                updateOne(filter,
+                        Updates.combine(
+                                Updates.set("lastVoteDate", LocalDate.now().toString()),
+                                update));
+        return user.getLong("votes") + 1; // +1 because of the old cached document
     }
 
     private static void updateEvent(MongoDatabase db) {
@@ -81,22 +80,14 @@ public class VoteUtil {
         }
 
         db.getCollection("event").updateOne(Filters.exists("votes"),
-                Updates.set("votes", (Long) event.get("votes") + 1L));
+                Updates.inc("votes", 1L));
     }
 
     @SuppressWarnings("deprecation")
-    public static void giveVoteRewards(Player player) {
-        MongoDatabase db = main.getDbManager().getDatabase();
-        UUID uuid = player.getUniqueId();
-        Bson filter = Filters.eq("uuid", uuid.toString());
-        Document user = db.getCollection("users").find(filter).first();
-        if (user == null) {
-            main.getLogger().severe("User profile for " + player.getName() + "could not be found.");
-            return;
-        }
+    public static void giveVoteRewards(Player player, long voteCount) {
 
         // luck chance = 20% (1 out of 5)
-        boolean luck = (Math.round(Math.random() * 5) + 1) == 1;
+        boolean luck = Math.round(Math.random() * 5) == 0;
 
         if (luck) {
             Bukkit.broadcastMessage(Message.VOTE_LUCK.getString().replace("%player", player.getName()).get(false));
@@ -109,54 +100,59 @@ public class VoteUtil {
         }
 
         for (PersonalReward reward : PersonalReward.values()) {
-            if (reward.getVotes() == (Long) user.get("votes")) {
-                Bukkit.broadcastMessage(Message.VOTE_ZIEL_REACHED.getString()
-                        .replace("%player", player.getName())
-                        .replace("%votes", String.valueOf(reward.getVotes()))
-                        .replace("%reward", reward.getName())
-                        .get());
-                for (String cmd : reward.getCommands()) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replaceAll("%player", player.getName()));
-                }
-                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.6f);
+            if (reward.getVotes() != voteCount)
+                continue;
+            Bukkit.broadcastMessage(Message.VOTE_ZIEL_REACHED.getString()
+                    .replace("%player", player.getName())
+                    .replace("%votes", String.valueOf(reward.getVotes()))
+                    .replace("%reward", reward.getName())
+                    .get());
+            for (String cmd : reward.getCommands()) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replaceAll("%player", player.getName()));
             }
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.6f);
         }
 
-        giveEventRewards(db, player);
+        giveEventRewards(player);
     }
 
     @SuppressWarnings("deprecation")
-    private static void giveEventRewards(MongoDatabase db, Player player) {
-        Document event = db.getCollection("event").find(Filters.exists("votes")).first();
+    private static void giveEventRewards(Player player) {
+        MongoDatabase db = main.getDbManager().getDatabase();
+        MongoCollection<Document> eventCollection = db.getCollection("event");
+        Document event = eventCollection.find(Filters.exists("votes")).first();
         if (event == null) {
             main.getLogger().severe("The event data has been requested, but the event data does not exist.");
             return;
         }
 
-        if (Boolean.parseBoolean((String) event.get("started"))) {
-            for (EventReward reward : EventReward.values()) {
-                if (reward.getVotes() == (Long) event.get("votes")) {
-                    Bukkit.broadcastMessage("");
-                    Bukkit.broadcastMessage(Message.VOTE_EVENT_REACHED.getString()
-                            .replace("%number", String.valueOf(reward.ordinal() + 1))
-                            .replace("%votes", String.valueOf(reward.getVotes()))
-                            .get(false));
-                    Bukkit.broadcastMessage(Message.VOTE_EVENT_REWARD.getString()
-                            .replace("%reward", reward.getName())
-                            .get(false));
-                    Bukkit.broadcastMessage("");
-                    Bukkit.getOnlinePlayers().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.1f));
-                    for (String cmd : reward.getCommands()) {
-                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replaceAll("%player", player.getName()));
-                    }
+        if (!event.getBoolean("started"))
+            return;
 
-                    Document rewards = (Document) event.get("completion");
-                    rewards.put(reward.toString(), LocalDateTime.now().toString());
-                    db.getCollection("event").updateOne(Filters.exists("votes"),
-                            Updates.set("completion", rewards));
-                }
+        for (EventReward reward : EventReward.values()) {
+            if (reward.getVotes() != event.getLong("votes"))
+                continue;
+
+            Bukkit.broadcastMessage("");
+            Bukkit.broadcastMessage(Message.VOTE_EVENT_REACHED.getString()
+                    .replace("%number", String.valueOf(reward.ordinal() + 1))
+                    .replace("%votes", String.valueOf(reward.getVotes()))
+                    .get(false));
+            Bukkit.broadcastMessage(Message.VOTE_EVENT_REWARD.getString()
+                    .replace("%reward", reward.getName())
+                    .get(false));
+            Bukkit.broadcastMessage("");
+            Bukkit.getOnlinePlayers().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.1f));
+
+            for (String cmd : reward.getCommands()) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replaceAll("%player", player.getName()));
             }
+
+            Document rewards = event.get("completion", Document.class);
+            rewards.put(reward.toString(), LocalDateTime.now().toString());
+            eventCollection.updateOne(Filters.exists("votes"), Updates.set("completion", rewards));
         }
+
     }
 
     public static String getVoteEventStatus() {
@@ -172,8 +168,8 @@ public class VoteUtil {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
 
-        if (Boolean.parseBoolean((String) event.get("started"))) {
-            long global = (Long) event.get("votes");
+        if (event.getBoolean("started", false)) {
+            long global = event.getLong("votes");
             EventReward next = Arrays.stream(EventReward.values()).filter(reward -> reward.getVotes() > global).findFirst().orElse(null);
             String votesUntil;
             if (next == null) {
@@ -243,7 +239,7 @@ public class VoteUtil {
 
     @Nullable
     private static LocalDateTime getCompletionDateTime(Document event, EventReward reward) {
-        Document completion = (Document) event.get("completion");
+        Document completion = event.get("completion", Document.class);
         if (completion.get(reward.toString()).equals("never")) {
             return null;
         }
