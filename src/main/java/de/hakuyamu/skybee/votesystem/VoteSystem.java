@@ -10,14 +10,14 @@ import de.hakuyamu.skybee.votesystem.runnables.VoteBroadcast;
 import de.hakuyamu.skybee.votesystem.runnables.VoteEventBroadcast;
 import de.hakuyamu.skybee.votesystem.util.EventAdaptor;
 import de.hakuyamu.skybee.votesystem.util.TimeUtil;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import org.bson.Document;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 
 public final class VoteSystem extends JavaPlugin {
 
@@ -28,26 +28,12 @@ public final class VoteSystem extends JavaPlugin {
     public void onEnable() {
         File dir = getDataFolder();
         if (!dir.isDirectory()) {
+            //noinspection ResultOfMethodCallIgnored
             dir.mkdirs();
 
-            File start = new File(dir, "start_event.sh");
             try {
-                start.createNewFile();
-                FileWriter writer = new FileWriter(start);
-                writer.write("screen -S skybee -X stuff \"voteadmin start\"\n");
-                writer.write("screen -S skybee -X eval \"stuff \\015\"\n");
-                writer.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            File stop = new File(dir, "stop_event.sh");
-            try {
-                stop.createNewFile();
-                FileWriter writer = new FileWriter(stop);
-                writer.write("screen -S skybee -X stuff \"voteadmin stop\"\n");
-                writer.write("screen -S skybee -X eval \"stuff \\015\"\n");
-                writer.flush();
+                extractFile(dir, "start_event.sh");
+                extractFile(dir, "stop_event.sh");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -70,6 +56,19 @@ public final class VoteSystem extends JavaPlugin {
 
         getCommand("voteadmin").setExecutor(new VoteAdminCommand(this));
         getCommand("vote").setExecutor(new VoteCommand(this));
+    }
+
+    private void extractFile(File dir, String resource) throws IOException {
+        File start = new File(dir, resource);
+        if (start.isFile()) {
+            return;
+        }
+        InputStream stream = getResource(start.getName());
+        if(stream == null) {
+            getLogger().warning(String.format("Missing \"%s\" file in resources.", resource));
+            return;
+        }
+        Files.copy(stream, start.toPath());
     }
 
     @Override
