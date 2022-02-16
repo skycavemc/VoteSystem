@@ -3,8 +3,7 @@ package de.hakuyamu.skybee.votesystem.commands;
 import com.mongodb.client.MongoCollection;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
-import de.hakuyamu.skybee.votesystem.util.Utils;
-import de.hakuyamu.skybee.votesystem.util.VoteUtil;
+import de.hakuyamu.skybee.votesystem.util.VoteUtils;
 import org.bson.Document;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -15,7 +14,6 @@ import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -52,20 +50,14 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Message.VADMIN_START_ALREADY.getString().get());
                     break;
                 }
-                userCollection.drop();
-                event.set("started", true);
-                event.set("start-timestamp", LocalDateTime.now().toString());
-                Utils.broadcast("");
-                Utils.broadcast(Message.VADMIN_START_FIRST.getString().get(false));
-                Utils.broadcast("");
+                VoteUtils.startEvent();
                 break;
             case "stop":
                 if (!event.getBoolean("started")) {
                     sender.sendMessage(Message.VADMIN_STOP_NOT.getString().get());
                     break;
                 }
-                event.set("started", false);
-                event.set("end-timestamp", LocalDateTime.now().toString());
+                VoteUtils.stopEvent();
                 sender.sendMessage(Message.VADMIN_STOP_SUCCESS.getString().get());
                 break;
             case "fake":
@@ -74,7 +66,7 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
                     break;
                 }
                 sender.sendMessage(Message.VADMIN_FAKE_EXE.getString().replace("%name", args[1]).get());
-                VoteUtil.processVote(args[1]);
+                VoteUtils.processVote(args[1]);
                 break;
             case "clear":
                 userCollection.drop();

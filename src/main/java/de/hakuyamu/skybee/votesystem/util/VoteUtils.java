@@ -22,10 +22,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.UUID;
 
-public class VoteUtil {
+public class VoteUtils {
 
     private static final VoteSystem main = JavaPlugin.getPlugin(VoteSystem.class);
-    private static final DateTimeFormatter dtf =  DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
+    public static final DateTimeFormatter DTF =  DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
 
     public static void processVote(String name) {
         MongoCollection<Document> userCollection = main.getUserCollection();
@@ -177,7 +177,7 @@ public class VoteUtil {
             String timestamp = event.getString("start-timestamp");
             String result = "§cnoch nie";
             if (timestamp != null) {
-                result = dtf.format(LocalDateTime.parse(timestamp)) + " Uhr";
+                result = DTF.format(LocalDateTime.parse(timestamp)) + " Uhr";
             }
 
             return Message.VOTE_EVENT_STATUS_ACTIVE.getString()
@@ -198,8 +198,8 @@ public class VoteUtil {
         }
 
         return Message.VOTE_EVENT_STATUS_INACTIVE.getString()
-                .replace("%started", dtf.format(LocalDateTime.parse(start)) + " Uhr")
-                .replace("%ended", dtf.format(LocalDateTime.parse(end)) + " Uhr")
+                .replace("%started", DTF.format(LocalDateTime.parse(start)) + " Uhr")
+                .replace("%ended", DTF.format(LocalDateTime.parse(end)) + " Uhr")
                 .get(false);
     }
 
@@ -226,7 +226,7 @@ public class VoteUtil {
         String timestamp = event.getString("completion." + reward);
         String timeResult = "§cunbekannt";
         if (timestamp != null) {
-            timeResult = dtf.format(LocalDateTime.parse(timestamp)) + " Uhr";
+            timeResult = DTF.format(LocalDateTime.parse(timestamp)) + " Uhr";
         }
 
         return Message.VOTE_EVENT_LINE_DONE.getString()
@@ -282,6 +282,30 @@ public class VoteUtil {
                 .replace("%votes", String.valueOf(reward.getVotes()))
                 .replace("%name", reward.getName())
                 .get(false);
+    }
+
+    public static void startEvent() {
+        YamlConfiguration event = main.getEventConfig();
+        if (event == null) {
+            return;
+        }
+        if (!event.getBoolean("started")) {
+            main.getUserCollection().drop();
+            event.set("started", true);
+            event.set("start-timestamp", LocalDateTime.now().toString());
+            Utils.broadcast("");
+            Utils.broadcast(Message.VADMIN_START_FIRST.getString().get(false));
+            Utils.broadcast("");
+        }
+    }
+
+    public static void stopEvent() {
+        YamlConfiguration event = main.getEventConfig();
+        if (event == null) {
+            return;
+        }
+        event.set("started", false);
+        event.set("end-timestamp", LocalDateTime.now().toString());
     }
 
 }

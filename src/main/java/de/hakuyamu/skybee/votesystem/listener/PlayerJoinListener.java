@@ -4,7 +4,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
-import de.hakuyamu.skybee.votesystem.util.VoteUtil;
+import de.hakuyamu.skybee.votesystem.util.VoteUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bukkit.event.EventHandler;
@@ -35,7 +35,7 @@ public class PlayerJoinListener implements Listener {
         for (int i = 0; i < (Long) user.get("queuedVotes"); i++) {
             votes += 1L;
             userCollection.updateOne(filter, Updates.set("votes", votes));
-            VoteUtil.giveVoteRewards(event.getPlayer());
+            VoteUtils.giveVoteRewards(event.getPlayer());
         }
 
         userCollection.updateOne(filter, Updates.set("queuedVotes", 0L));

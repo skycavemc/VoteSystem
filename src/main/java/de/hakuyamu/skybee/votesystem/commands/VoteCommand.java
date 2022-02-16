@@ -8,7 +8,7 @@ import de.hakuyamu.skybee.votesystem.enums.EventReward;
 import de.hakuyamu.skybee.votesystem.enums.Message;
 import de.hakuyamu.skybee.votesystem.enums.PersonalReward;
 import de.hakuyamu.skybee.votesystem.enums.TrustedServices;
-import de.hakuyamu.skybee.votesystem.util.VoteUtil;
+import de.hakuyamu.skybee.votesystem.util.VoteUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
@@ -60,18 +60,18 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
         switch (args[0]) {
             case "event":
                 sender.sendMessage("");
-                sender.sendMessage(VoteUtil.getVoteEventStatus());
+                sender.sendMessage(VoteUtils.getVoteEventStatus());
                 sender.sendMessage("");
                 for (EventReward reward : EventReward.values()) {
-                    sender.sendMessage(VoteUtil.getVoteEventLine(reward));
+                    sender.sendMessage(VoteUtils.getVoteEventLine(reward));
                 }
                 break;
             case "ziel":
                 sender.sendMessage("");
-                sender.sendMessage(VoteUtil.getVoteZielStatus(player));
+                sender.sendMessage(VoteUtils.getVoteZielStatus(player));
                 sender.sendMessage("");
                 for (PersonalReward reward : PersonalReward.values()) {
-                    sender.sendMessage(VoteUtil.getVoteZielLine(player, reward));
+                    sender.sendMessage(VoteUtils.getVoteZielLine(player, reward));
                 }
                 break;
             case "help":
