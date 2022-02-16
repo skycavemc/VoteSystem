@@ -1,6 +1,6 @@
 package de.hakuyamu.skybee.votesystem.listener;
 
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
@@ -25,8 +25,8 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
         Bson filter = Filters.eq("uuid", uuid.toString());
-        MongoDatabase db = main.getDbManager().getDatabase();
-        Document user = db.getCollection("users").find(filter).first();
+        MongoCollection<Document> userCollection = main.getUserCollection();
+        Document user = userCollection.find(filter).first();
         if (user == null) {
             return;
         }
@@ -34,11 +34,11 @@ public class PlayerJoinListener implements Listener {
         long votes = (Long) user.get("votes");
         for (int i = 0; i < (Long) user.get("queuedVotes"); i++) {
             votes += 1L;
-            db.getCollection("users").updateOne(filter, Updates.set("votes", votes));
+            userCollection.updateOne(filter, Updates.set("votes", votes));
             VoteUtil.giveVoteRewards(event.getPlayer());
         }
 
-        db.getCollection("users").updateOne(filter, Updates.set("queuedVotes", 0L));
+        userCollection.updateOne(filter, Updates.set("queuedVotes", 0L));
     }
 
 }

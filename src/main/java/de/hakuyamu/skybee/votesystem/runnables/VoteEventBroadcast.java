@@ -1,10 +1,9 @@
 package de.hakuyamu.skybee.votesystem.runnables;
 
-import com.mongodb.client.model.Filters;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
-import org.bson.Document;
-import org.bukkit.Bukkit;
+import de.hakuyamu.skybee.votesystem.util.Utils;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class VoteEventBroadcast extends BukkitRunnable {
@@ -15,17 +14,15 @@ public class VoteEventBroadcast extends BukkitRunnable {
         this.main = main;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void run() {
-        Document event = main.getDbManager().getDatabase().getCollection("event")
-                .find(Filters.exists("votes")).first();
-        if (event == null || !Boolean.parseBoolean((String) event.get("started"))) {
+        YamlConfiguration event = main.getEventConfig();
+        if (event == null || !event.getBoolean("started")) {
             return;
         }
-        Bukkit.broadcastMessage("");
-        Bukkit.broadcastMessage(Message.VOTE_EVENT_BROADCAST.getString().get());
-        Bukkit.broadcastMessage("");
+        Utils.broadcast("");
+        Utils.broadcast(Message.VOTE_EVENT_BROADCAST.getString().get());
+        Utils.broadcast("");
     }
 
 }

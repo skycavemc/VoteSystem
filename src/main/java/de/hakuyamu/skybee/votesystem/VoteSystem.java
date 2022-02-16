@@ -1,29 +1,33 @@
 package de.hakuyamu.skybee.votesystem;
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.lang.Nullable;
 import de.hakuyamu.skybee.votesystem.commands.VoteAdminCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteCommand;
 import de.hakuyamu.skybee.votesystem.listener.IncomingVoteListener;
 import de.hakuyamu.skybee.votesystem.listener.PlayerJoinListener;
-import de.hakuyamu.skybee.votesystem.manager.DBManager;
 import de.hakuyamu.skybee.votesystem.runnables.VoteBroadcast;
 import de.hakuyamu.skybee.votesystem.runnables.VoteEventBroadcast;
-import de.hakuyamu.skybee.votesystem.util.EventAdaptor;
-import de.hakuyamu.skybee.votesystem.util.TimeUtil;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
+import de.hakuyamu.skybee.votesystem.util.Utils;
 import org.bson.Document;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
 
 public final class VoteSystem extends JavaPlugin {
 
     public static final String PREFIX = "&a&l| &2Vote &8» ";
-    private DBManager dbManager;
+    private MongoClient mongoClient;
+    private MongoDatabase database;
+    private YamlConfiguration eventConfig;
 
     @Override
     public void onEnable() {
@@ -31,62 +35,50 @@ public final class VoteSystem extends JavaPlugin {
         if (!dir.isDirectory()) {
             //noinspection ResultOfMethodCallIgnored
             dir.mkdirs();
-
-            try {
-                extractFile(dir, "start_event.sh");
-                extractFile(dir, "stop_event.sh");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Utils.extractPluginResource(this, "start_event.sh");
+            Utils.extractPluginResource(this, "stop_event.sh");
         }
 
-        dbManager = new DBManager();
-        dbManager.connect();
-
-        MongoCollection<Document> eventDocs = dbManager.getDatabase().getCollection("event");
-        if (eventDocs.countDocuments() < 1) {
-            eventDocs.insertOne(EventAdaptor.generateNewEvent());
+        if (Utils.extractPluginResource(this, "event.yml")) {
+            eventConfig = YamlConfiguration.loadConfiguration(new File(dir, "event.yml"));
         }
 
-        new VoteBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(10),
-            TimeUtil.minutesToTicks(20));
-        new VoteEventBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(20),
-            TimeUtil.minutesToTicks(20));
+        mongoClient = MongoClients.create();
+        database = mongoClient.getDatabase("sb_vote_system");
+
+        new VoteBroadcast(this).runTaskTimer(this, Utils.minutesToTicks(10),
+                Utils.minutesToTicks(20));
+        new VoteEventBroadcast(this).runTaskTimer(this, Utils.minutesToTicks(20),
+                Utils.minutesToTicks(20));
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new IncomingVoteListener(), this);
         pm.registerEvents(new PlayerJoinListener(this), this);
 
-        PluginCommand command = getCommand("voteadmin");
-        if (command != null) {
-            command.setExecutor(new VoteAdminCommand(this));
-        }
-        command = getCommand("vote");
-        if(command != null) {
-            command.setExecutor(new VoteCommand(this));
-        }
+        registerCommand("voteadmin", new VoteAdminCommand(this));
+        registerCommand("vote", new VoteCommand(this));
     }
 
-    private void extractFile(File dir, String resource) throws IOException {
-        File start = new File(dir, resource);
-        if (start.isFile()) {
+    private void registerCommand(String command, CommandExecutor executor) {
+        PluginCommand cmd = getCommand(command);
+        if (cmd == null) {
+            getLogger().severe("No entry for command " + command + " found in the plugin.yml.");
             return;
         }
-        InputStream stream = getResource(start.getName());
-        if (stream == null) {
-            getLogger().warning(String.format("Missing \"%s\" file in resources.", resource));
-            return;
-        }
-        Files.copy(stream, start.toPath());
+        cmd.setExecutor(executor);
     }
 
     @Override
     public void onDisable() {
-        dbManager.disconnect();
+        mongoClient.close();
     }
 
-    public DBManager getDbManager() {
-        return dbManager;
+    public MongoCollection<Document> getUserCollection() {
+        return database.getCollection("users");
     }
 
+    @Nullable
+    public YamlConfiguration getEventConfig() {
+        return eventConfig;
+    }
 }

@@ -1,6 +1,5 @@
 package de.hakuyamu.skybee.votesystem.runnables;
 
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
@@ -24,8 +23,7 @@ public class VoteBroadcast extends BukkitRunnable {
     public void run() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Bson filter = Filters.eq("uuid", player.getUniqueId());
-            MongoDatabase db = main.getDbManager().getDatabase();
-            Document user = db.getCollection("users").find(filter).first();
+            Document user = main.getUserCollection().find(filter).first();
 
             if (user == null) {
                 player.sendMessage(Message.VOTE_BROADCAST.getString()

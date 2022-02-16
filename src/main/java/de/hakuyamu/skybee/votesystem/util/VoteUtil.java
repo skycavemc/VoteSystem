@@ -1,6 +1,6 @@
 package de.hakuyamu.skybee.votesystem.util;
 
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
@@ -12,9 +12,9 @@ import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,9 +25,10 @@ import java.util.UUID;
 public class VoteUtil {
 
     private static final VoteSystem main = JavaPlugin.getPlugin(VoteSystem.class);
+    private static final DateTimeFormatter dtf =  DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
 
     public static void processVote(String name) {
-        MongoDatabase db = main.getDbManager().getDatabase();
+        MongoCollection<Document> userCollection = main.getUserCollection();
         Player player = Bukkit.getPlayer(name);
         UUID uuid;
         boolean offline = false;
@@ -43,8 +44,8 @@ public class VoteUtil {
             uuid = player.getUniqueId();
         }
 
-        updateUser(db, uuid, offline);
-        updateEvent(db);
+        processVoteForUser(userCollection, uuid, offline);
+        processVoteForEvent();
 
         if (!offline) {
             main.getLogger().info(name + " voted for the server.");
@@ -55,12 +56,12 @@ public class VoteUtil {
         main.getLogger().info(name + " voted for the server, vote saved in their queue.");
     }
 
-    private static void updateUser(MongoDatabase db, UUID uuid, boolean offline) {
+    private static void processVoteForUser(MongoCollection<Document> userCollection, UUID uuid, boolean offline) {
         Bson filter = Filters.eq("uuid", uuid.toString());
-        Document user = db.getCollection("users").find(filter).first();
+        Document user = userCollection.find(filter).first();
         if (user == null) {
             user = UserAdaptor.generateNewUser(uuid, LocalDate.now());
-            db.getCollection("users").insertOne(user);
+            userCollection.insertOne(user);
         }
 
         Bson update;
@@ -69,27 +70,24 @@ public class VoteUtil {
         } else {
             update = Updates.set("votes", (Long) user.get("votes") + 1L);
         }
-        db.getCollection("users").updateOne(filter,
+        userCollection.updateOne(filter,
                 Updates.combine(Updates.set("lastVoteDate", LocalDate.now().toString()), update));
     }
 
-    private static void updateEvent(MongoDatabase db) {
-        Document event = db.getCollection("event").find(Filters.exists("votes")).first();
+    private static void processVoteForEvent() {
+        YamlConfiguration event = main.getEventConfig();
         if (event == null) {
-            event = EventAdaptor.generateNewEvent();
-            db.getCollection("event").insertOne(event);
+            main.getLogger().severe("Event config does not exist!");
+            return;
         }
-
-        db.getCollection("event").updateOne(Filters.exists("votes"),
-                Updates.set("votes", (Long) event.get("votes") + 1L));
+        event.set("votes", event.getInt("votes") + 1);
     }
 
-    @SuppressWarnings("deprecation")
     public static void giveVoteRewards(Player player) {
-        MongoDatabase db = main.getDbManager().getDatabase();
+        MongoCollection<Document> userCollection = main.getUserCollection();
         UUID uuid = player.getUniqueId();
         Bson filter = Filters.eq("uuid", uuid.toString());
-        Document user = db.getCollection("users").find(filter).first();
+        Document user = userCollection.find(filter).first();
         if (user == null) {
             main.getLogger().severe("User profile for " + player.getName() + "could not be found.");
             return;
@@ -99,18 +97,18 @@ public class VoteUtil {
         boolean luck = (Math.round(Math.random() * 5) + 1) == 1;
 
         if (luck) {
-            Bukkit.broadcastMessage(Message.VOTE_LUCK.getString().replace("%player", player.getName()).get(false));
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "padmin give " + player.getName() + " 15");
+            Utils.broadcast(Message.VOTE_LUCK.getString().replace("%player", player.getName()).get(false));
+            Utils.executeConsoleCommand("padmin give " + player.getName() + " 15");
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
         } else {
-            Bukkit.broadcastMessage(Message.VOTE_DEFAULT.getString().replace("%player", player.getName()).get(false));
+            Utils.broadcast(Message.VOTE_DEFAULT.getString().replace("%player", player.getName()).get(false));
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "padmin give " + player.getName() + " 10");
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 0.8f);
         }
 
         for (PersonalReward reward : PersonalReward.values()) {
             if (reward.getVotes() == (Long) user.get("votes")) {
-                Bukkit.broadcastMessage(Message.VOTE_ZIEL_REACHED.getString()
+                Utils.broadcast(Message.VOTE_ZIEL_REACHED.getString()
                         .replace("%player", player.getName())
                         .replace("%votes", String.valueOf(reward.getVotes()))
                         .replace("%reward", reward.getName())
@@ -122,74 +120,77 @@ public class VoteUtil {
             }
         }
 
-        giveEventRewards(db, player);
+        giveEventRewards(player);
     }
 
-    @SuppressWarnings("deprecation")
-    private static void giveEventRewards(MongoDatabase db, Player player) {
-        Document event = db.getCollection("event").find(Filters.exists("votes")).first();
+    private static void giveEventRewards(Player player) {
+        YamlConfiguration event = main.getEventConfig();
         if (event == null) {
-            main.getLogger().severe("The event data has been requested, but the event data does not exist.");
+            main.getLogger().severe("Event config does not exist!");
             return;
         }
 
-        if (Boolean.parseBoolean((String) event.get("started"))) {
+        if (event.getBoolean("started")) {
             for (EventReward reward : EventReward.values()) {
-                if (reward.getVotes() == (Long) event.get("votes")) {
-                    Bukkit.broadcastMessage("");
-                    Bukkit.broadcastMessage(Message.VOTE_EVENT_REACHED.getString()
+                if (reward.getVotes() == event.getInt("votes")) {
+                    Utils.broadcast("");
+                    Utils.broadcast(Message.VOTE_EVENT_REACHED.getString()
                             .replace("%number", String.valueOf(reward.ordinal() + 1))
                             .replace("%votes", String.valueOf(reward.getVotes()))
                             .get(false));
-                    Bukkit.broadcastMessage(Message.VOTE_EVENT_REWARD.getString()
+                    Utils.broadcast(Message.VOTE_EVENT_REWARD.getString()
                             .replace("%reward", reward.getName())
                             .get(false));
-                    Bukkit.broadcastMessage("");
+                    Utils.broadcast("");
                     Bukkit.getOnlinePlayers().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.1f));
                     for (String cmd : reward.getCommands()) {
                         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replaceAll("%player", player.getName()));
                     }
 
-                    Document rewards = (Document) event.get("completion");
-                    rewards.put(reward.toString(), LocalDateTime.now().toString());
-                    db.getCollection("event").updateOne(Filters.exists("votes"),
-                            Updates.set("completion", rewards));
+                    event.set("completion." + reward, LocalDateTime.now().toString());
                 }
             }
         }
     }
 
     public static String getVoteEventStatus() {
-        MongoDatabase db = main.getDbManager().getDatabase();
-        Document event = db.getCollection("event").find(Filters.exists("votes")).first();
+        YamlConfiguration event = main.getEventConfig();
         if (event == null) {
-            main.getLogger().severe("The event data has been requested, but the event data does not exist.");
+            main.getLogger().severe("Event config does not exist!");
             return Message.VOTE_EVENT_STATUS_INACTIVE.getString()
                     .replace("%started", "§cnoch nie")
                     .replace("%ended", "§cnoch nie")
                     .get(false);
         }
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
+        if (event.getBoolean("started")) {
+            int global = event.getInt("votes");
 
-        if (Boolean.parseBoolean((String) event.get("started"))) {
-            long global = (Long) event.get("votes");
-            EventReward next = Arrays.stream(EventReward.values()).filter(reward -> reward.getVotes() > global).findFirst().orElse(null);
-            String votesUntil;
-            if (next == null) {
-                votesUntil = "§ckeins";
-            } else {
-                votesUntil = "noch " + (next.getVotes() - global) + " Votes";
+            String votesUntil = "§ckeins";
+            for (EventReward rew : EventReward.values()) {
+                if (rew.getVotes() > global) {
+                    votesUntil = "noch " + (rew.getVotes() - global) + " Votes";
+                    break;
+                }
             }
+
+            String timestamp = event.getString("start-timestamp");
+            String result = "§cnoch nie";
+            if (timestamp != null) {
+                result = dtf.format(LocalDateTime.parse(timestamp)) + " Uhr";
+            }
+
             return Message.VOTE_EVENT_STATUS_ACTIVE.getString()
-                    .replace("%votes", String.valueOf(global))
+                    .replace("%votes", "" + global)
                     .replace("%next", votesUntil)
-                    .replace("%started", LocalDateTime.parse((String) event.get("start"))
-                            .format(formatter) + " Uhr")
+                    .replace("%started", result)
                     .get(false);
         }
+        
+        String start = event.getString("start-timestamp");
+        String end = event.getString("end-timestamp");
 
-        if (event.get("start").equals("never") || event.get("end").equals("never")) {
+        if (start == null || end == null) {
             return Message.VOTE_EVENT_STATUS_INACTIVE.getString()
                     .replace("%started", "§cnoch nie")
                     .replace("%ended", "§cnoch nie")
@@ -197,18 +198,15 @@ public class VoteUtil {
         }
 
         return Message.VOTE_EVENT_STATUS_INACTIVE.getString()
-                .replace("%started", LocalDateTime.parse((String) event.get("start"))
-                        .format(formatter) + " Uhr")
-                .replace("%ended", LocalDateTime.parse((String) event.get("end"))
-                        .format(formatter) + " Uhr")
+                .replace("%started", dtf.format(LocalDateTime.parse(start)) + " Uhr")
+                .replace("%ended", dtf.format(LocalDateTime.parse(end)) + " Uhr")
                 .get(false);
     }
 
     public static String getVoteEventLine(EventReward reward) {
-        MongoDatabase db = main.getDbManager().getDatabase();
-        Document event = db.getCollection("event").find(Filters.exists("votes")).first();
+        YamlConfiguration event = main.getEventConfig();
         if (event == null) {
-            main.getLogger().severe("The event data has been requested, but the event data does not exist.");
+            main.getLogger().severe("Event config does not exist!");
             return Message.VOTE_EVENT_LINE_NOT.getString()
                     .replace("%numeral", String.valueOf(reward.ordinal() + 1))
                     .replace("%votes", String.valueOf(reward.getVotes()))
@@ -217,42 +215,31 @@ public class VoteUtil {
         }
 
 
-        if (!Boolean.parseBoolean((String) event.get("started")) || (Long) event.get("votes") < reward.getVotes()) {
+        if (!event.getBoolean("started") || event.getInt("votes") < reward.getVotes()) {
             return Message.VOTE_EVENT_LINE_NOT.getString()
                     .replace("%numeral", String.valueOf(reward.ordinal() + 1))
                     .replace("%votes", String.valueOf(reward.getVotes()))
                     .replace("%name", reward.getName())
                     .get(false);
-        } else {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
-            LocalDateTime time = getCompletionDateTime(event, reward);
-            String timeResult;
-            if (time == null) {
-                timeResult = "§cunbekannt";
-            } else {
-                timeResult = time.format(formatter) + " Uhr";
-            }
-            return Message.VOTE_EVENT_LINE_DONE.getString()
-                    .replace("%numeral", String.valueOf(reward.ordinal() + 1))
-                    .replace("%votes", String.valueOf(reward.getVotes()))
-                    .replace("%name", reward.getName())
-                    .replace("%date", timeResult)
-                    .get(false);
         }
-    }
 
-    @Nullable
-    private static LocalDateTime getCompletionDateTime(Document event, EventReward reward) {
-        Document completion = (Document) event.get("completion");
-        if (completion.get(reward.toString()).equals("never")) {
-            return null;
+        String timestamp = event.getString("completion." + reward);
+        String timeResult = "§cunbekannt";
+        if (timestamp != null) {
+            timeResult = dtf.format(LocalDateTime.parse(timestamp)) + " Uhr";
         }
-        return LocalDateTime.parse((String) completion.get(reward.toString()));
+
+        return Message.VOTE_EVENT_LINE_DONE.getString()
+                .replace("%numeral", String.valueOf(reward.ordinal() + 1))
+                .replace("%votes", String.valueOf(reward.getVotes()))
+                .replace("%name", reward.getName())
+                .replace("%date", timeResult)
+                .get(false);
     }
 
     public static String getVoteZielStatus(Player player) {
         Bson filter = Filters.eq("uuid", player.getUniqueId().toString());
-        Document user = main.getDbManager().getDatabase().getCollection("users").find(filter).first();
+        Document user = main.getUserCollection().find(filter).first();
         if (user == null) {
             main.getLogger().severe("User profile for " + player.getName() + "could not be found.");
             return Message.VOTE_ZIEL_STATUS.getString()
@@ -277,7 +264,7 @@ public class VoteUtil {
 
     public static String getVoteZielLine(Player player, PersonalReward reward) {
         Bson filter = Filters.eq("uuid", player.getUniqueId().toString());
-        Document user = main.getDbManager().getDatabase().getCollection("users").find(filter).first();
+        Document user = main.getUserCollection().find(filter).first();
 
         Message message;
         if (user == null) {

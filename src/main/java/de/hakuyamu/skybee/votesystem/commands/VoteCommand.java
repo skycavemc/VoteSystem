@@ -1,7 +1,6 @@
 package de.hakuyamu.skybee.votesystem.commands;
 
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
@@ -23,7 +22,10 @@ import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 public class VoteCommand implements CommandExecutor, TabCompleter {
 
@@ -33,7 +35,6 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
         this.main = main;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player)) {
@@ -54,7 +55,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        MongoCollection<Document> userCollection = main.getDbManager().getDatabase().getCollection("users");
+        MongoCollection<Document> userCollection = main.getUserCollection();
 
         switch (args[0]) {
             case "event":
