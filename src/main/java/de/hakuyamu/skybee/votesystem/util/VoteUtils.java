@@ -1,13 +1,11 @@
 package de.hakuyamu.skybee.votesystem.util;
 
-import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Updates;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.EventReward;
 import de.hakuyamu.skybee.votesystem.enums.Message;
 import de.hakuyamu.skybee.votesystem.enums.PersonalReward;
-import org.bson.Document;
+import de.hakuyamu.skybee.votesystem.models.User;
 import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -19,7 +17,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.UUID;
 
 public class VoteUtils {
@@ -28,7 +25,6 @@ public class VoteUtils {
     public static final DateTimeFormatter DTF =  DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
 
     public static void processVote(String name) {
-        MongoCollection<Document> userCollection = main.getUserCollection();
         Player player = Bukkit.getPlayer(name);
         UUID uuid;
         boolean offline = false;
@@ -44,7 +40,7 @@ public class VoteUtils {
             uuid = player.getUniqueId();
         }
 
-        processVoteForUser(userCollection, uuid, offline);
+        processVoteForUser(uuid, offline);
         processVoteForEvent();
 
         if (!offline) {
@@ -56,22 +52,21 @@ public class VoteUtils {
         main.getLogger().info(name + " voted for the server, vote saved in their queue.");
     }
 
-    private static void processVoteForUser(MongoCollection<Document> userCollection, UUID uuid, boolean offline) {
+    private static void processVoteForUser(UUID uuid, boolean offline) {
         Bson filter = Filters.eq("uuid", uuid.toString());
-        Document user = userCollection.find(filter).first();
+        User user = main.getUserCollection().find(filter).first();
         if (user == null) {
-            user = UserAdaptor.generateNewUser(uuid, LocalDate.now());
-            userCollection.insertOne(user);
+            user = new User(uuid.toString(), 0, 0, LocalDate.now().toString());
+            main.getUserCollection().insertOne(user);
         }
 
-        Bson update;
         if (offline) {
-            update = Updates.set("queuedVotes", (Long) user.get("queuedVotes") + 1L);
+            user.setQueuedVotes(user.getQueuedVotes() + 1);
         } else {
-            update = Updates.set("votes", (Long) user.get("votes") + 1L);
+            user.setVotes(user.getVotes() + 1);
         }
-        userCollection.updateOne(filter,
-                Updates.combine(Updates.set("lastVoteDate", LocalDate.now().toString()), update));
+        user.setLastVoteDate(LocalDate.now().toString());
+        main.getUserCollection().replaceOne(filter, user);
     }
 
     private static void processVoteForEvent() {
@@ -84,10 +79,8 @@ public class VoteUtils {
     }
 
     public static void giveVoteRewards(Player player) {
-        MongoCollection<Document> userCollection = main.getUserCollection();
         UUID uuid = player.getUniqueId();
-        Bson filter = Filters.eq("uuid", uuid.toString());
-        Document user = userCollection.find(filter).first();
+        User user = main.getUserCollection().find(Filters.eq("uuid", uuid.toString())).first();
         if (user == null) {
             main.getLogger().severe("User profile for " + player.getName() + "could not be found.");
             return;
@@ -107,7 +100,7 @@ public class VoteUtils {
         }
 
         for (PersonalReward reward : PersonalReward.values()) {
-            if (reward.getVotes() == (Long) user.get("votes")) {
+            if (reward.getVotes() == user.getVotes()) {
                 Utils.broadcast(Message.VOTE_ZIEL_REACHED.getString()
                         .replace("%player", player.getName())
                         .replace("%votes", String.valueOf(reward.getVotes()))
@@ -239,7 +232,7 @@ public class VoteUtils {
 
     public static String getVoteZielStatus(Player player) {
         Bson filter = Filters.eq("uuid", player.getUniqueId().toString());
-        Document user = main.getUserCollection().find(filter).first();
+        User user = main.getUserCollection().find(filter).first();
         if (user == null) {
             main.getLogger().severe("User profile for " + player.getName() + "could not be found.");
             return Message.VOTE_ZIEL_STATUS.getString()
@@ -248,33 +241,28 @@ public class VoteUtils {
                     .get(false);
         }
 
-        PersonalReward next = Arrays.stream(PersonalReward.values())
-                .filter(reward -> reward.getVotes() > (Long) user.get("votes")).findFirst().orElse(null);
-        String votesUntil;
-        if (next == null) {
-            votesUntil = "§ckeins";
-        } else {
-            votesUntil = "noch " + (next.getVotes() - (Long) user.get("votes")) + " Votes";
+        String votesUntil = "§ckeins";
+        for (PersonalReward rew : PersonalReward.values()) {
+            if (rew.getVotes() > user.getVotes()) {
+                votesUntil = "noch " + (rew.getVotes() - user.getVotes()) + " Votes";
+            }
         }
+
         return Message.VOTE_ZIEL_STATUS.getString()
-                .replace("%votes", String.valueOf(user.get("votes")))
+                .replace("%votes", "" + user.getVotes())
                 .replace("%next", votesUntil)
                 .get(false);
     }
 
     public static String getVoteZielLine(Player player, PersonalReward reward) {
         Bson filter = Filters.eq("uuid", player.getUniqueId().toString());
-        Document user = main.getUserCollection().find(filter).first();
+        User user = main.getUserCollection().find(filter).first();
 
         Message message;
-        if (user == null) {
+        if (user == null || reward.getVotes() < user.getVotes()) {
             message = Message.VOTE_ZIEL_LINE_NOT;
         } else {
-            if ((Long) user.get("votes") < reward.getVotes()) {
-                message = Message.VOTE_ZIEL_LINE_NOT;
-            } else {
-                message = Message.VOTE_ZIEL_LINE_DONE;
-            }
+            message = Message.VOTE_ZIEL_LINE_DONE;
         }
 
         return message.getString()

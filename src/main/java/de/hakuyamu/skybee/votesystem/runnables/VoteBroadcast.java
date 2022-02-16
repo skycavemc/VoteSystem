@@ -3,7 +3,7 @@ package de.hakuyamu.skybee.votesystem.runnables;
 import com.mongodb.client.model.Filters;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
-import org.bson.Document;
+import de.hakuyamu.skybee.votesystem.models.User;
 import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -23,7 +23,7 @@ public class VoteBroadcast extends BukkitRunnable {
     public void run() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             Bson filter = Filters.eq("uuid", player.getUniqueId());
-            Document user = main.getUserCollection().find(filter).first();
+            User user = main.getUserCollection().find(filter).first();
 
             if (user == null) {
                 player.sendMessage(Message.VOTE_BROADCAST.getString()
@@ -31,13 +31,13 @@ public class VoteBroadcast extends BukkitRunnable {
                 continue;
             }
 
-            LocalDate lastVoteDate = LocalDate.parse((String) user.get("lastVoteDate"));
+            LocalDate lastVoteDate = LocalDate.parse(user.getLastVoteDate());
             if (lastVoteDate == null || lastVoteDate.compareTo(LocalDate.now()) == 0) {
                 continue;
             }
 
             player.sendMessage(Message.VOTE_BROADCAST.getString()
-                    .replace("%votes", String.valueOf(user.get("votes"))).get());
+                    .replace("%votes", "" + user.getVotes()).get());
         }
     }
 

@@ -1,5 +1,7 @@
 package de.hakuyamu.skybee.votesystem;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -9,11 +11,15 @@ import de.hakuyamu.skybee.votesystem.commands.VoteAdminCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteCommand;
 import de.hakuyamu.skybee.votesystem.listener.IncomingVoteListener;
 import de.hakuyamu.skybee.votesystem.listener.PlayerJoinListener;
+import de.hakuyamu.skybee.votesystem.models.User;
 import de.hakuyamu.skybee.votesystem.runnables.VoteBroadcast;
 import de.hakuyamu.skybee.votesystem.runnables.VoteEventBroadcast;
 import de.hakuyamu.skybee.votesystem.util.Utils;
 import de.hakuyamu.skybee.votesystem.util.VoteUtils;
-import org.bson.Document;
+import org.bson.codecs.configuration.CodecProvider;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -61,7 +67,16 @@ public final class VoteSystem extends JavaPlugin {
             scheduleNextEvent(next);
         }
 
-        mongoClient = MongoClients.create();
+        CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
+        CodecRegistry pojoCodecRegistry = CodecRegistries.fromRegistries(
+                MongoClientSettings.getDefaultCodecRegistry(),
+                CodecRegistries.fromProviders(pojoCodecProvider)
+        );
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(new ConnectionString("mongodb://localhost:27017"))
+                .codecRegistry(pojoCodecRegistry)
+                .build();
+        mongoClient = MongoClients.create(settings);
         database = mongoClient.getDatabase("sb_vote_system");
 
         new VoteBroadcast(this).runTaskTimer(this, Utils.minutesToTicks(10),
@@ -104,8 +119,8 @@ public final class VoteSystem extends JavaPlugin {
         mongoClient.close();
     }
 
-    public MongoCollection<Document> getUserCollection() {
-        return database.getCollection("users");
+    public MongoCollection<User> getUserCollection() {
+        return database.getCollection("users", User.class);
     }
 
     @Nullable

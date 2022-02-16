@@ -3,8 +3,8 @@ package de.hakuyamu.skybee.votesystem.commands;
 import com.mongodb.client.MongoCollection;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
+import de.hakuyamu.skybee.votesystem.models.User;
 import de.hakuyamu.skybee.votesystem.util.VoteUtils;
-import org.bson.Document;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -36,7 +36,7 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        MongoCollection<Document> userCollection = main.getUserCollection();
+        MongoCollection<User> userCollection = main.getUserCollection();
         YamlConfiguration event = main.getEventConfig();
         if (event == null) {
             main.getLogger().severe("Event config does not exist!");
