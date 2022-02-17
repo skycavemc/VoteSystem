@@ -1,7 +1,7 @@
-name: VoteSystem
+name: ${project.name}
 version: ${project.version}
 main: de.hakuyamu.skybee.votesystem.VoteSystem
-api-version: 1.16
+api-version: 1.18
 depend: [ Votifier ]
 authors: [ Hakuyamu ]
 

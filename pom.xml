@@ -6,14 +6,14 @@
 
     <groupId>de.hakuyamu.skybee</groupId>
     <artifactId>vote-system</artifactId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
     <packaging>jar</packaging>
 
     <name>VoteSystem</name>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mongodb-driver-sync.version>4.4.1</mongodb-driver-sync.version>
     </properties>
@@ -32,6 +32,13 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>io.papermc.paper:paper-api</exclude>
+                                    <exclude>com.github.NuVotifier.NuVotifier:nuvotifier-api</exclude>
+                                    <exclude>com.github.NuVotifier.NuVotifier:nuvotifier-bukkit</exclude>
+                                </excludes>
+                            </artifactSet>
                         </configuration>
                     </execution>
                 </executions>
@@ -43,6 +50,7 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <finalName>${project.name}-${project.version}</finalName>
     </build>
 
     <repositories>
@@ -66,9 +74,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.destroystokyo.paper</groupId>
+            <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.16.5-R0.1-SNAPSHOT</version>
+            <version>1.18.1-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
