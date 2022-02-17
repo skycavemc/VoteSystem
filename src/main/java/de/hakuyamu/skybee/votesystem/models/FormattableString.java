@@ -3,6 +3,7 @@ package de.hakuyamu.skybee.votesystem.models;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import org.bukkit.ChatColor;
 
+@SuppressWarnings("unused")
 public class FormattableString {
 
     private String result;

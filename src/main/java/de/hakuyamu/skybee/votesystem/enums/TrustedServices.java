@@ -1,10 +1,8 @@
 package de.hakuyamu.skybee.votesystem.enums;
 
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 
 public enum TrustedServices {
 
@@ -23,25 +21,16 @@ public enum TrustedServices {
         this.service = service;
     }
 
-    public String getUrl() {
-        return url;
-    }
-
-    public int getNumber() {
-        return number;
-    }
-
     public String getService() {
         return service;
     }
 
-    public BaseComponent getVoteLink(String name) {
-        TextComponent result = new TextComponent(TextComponent.fromLegacyText("§8» §2Link " + number + ": "));
-        TextComponent extra = new TextComponent(TextComponent.fromLegacyText("§e§nKlicke hier"));
-        extra.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url + name));
-        extra.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§aKlicke, um Vote " + number + " aufzurufen!")));
-        result.addExtra(extra);
-        return result;
+    public Component getVoteLink(String name) {
+        return Component.text("§8» §2Link " + number + ": ")
+                .append(Component.text("§e§nKlicke hier")
+                        .clickEvent(ClickEvent.clickEvent(ClickEvent.Action.OPEN_URL, url + name))
+                        .hoverEvent(HoverEvent.hoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                Component.text("§aKlicke, um Vote " + number + " aufzurufen!"))));
     }
 
     public static boolean isListed(String service) {

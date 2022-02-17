@@ -1,29 +1,48 @@
 package de.hakuyamu.skybee.votesystem;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.lang.Nullable;
 import de.hakuyamu.skybee.votesystem.commands.VoteAdminCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteCommand;
 import de.hakuyamu.skybee.votesystem.listener.IncomingVoteListener;
 import de.hakuyamu.skybee.votesystem.listener.PlayerJoinListener;
-import de.hakuyamu.skybee.votesystem.manager.DBManager;
+import de.hakuyamu.skybee.votesystem.models.User;
 import de.hakuyamu.skybee.votesystem.runnables.VoteBroadcast;
 import de.hakuyamu.skybee.votesystem.runnables.VoteEventBroadcast;
-import de.hakuyamu.skybee.votesystem.util.EventAdaptor;
-import de.hakuyamu.skybee.votesystem.util.TimeUtil;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import org.bson.Document;
+import de.hakuyamu.skybee.votesystem.util.Utils;
+import de.hakuyamu.skybee.votesystem.util.VoteUtils;
+import org.bson.codecs.configuration.CodecProvider;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.TemporalAdjusters;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public final class VoteSystem extends JavaPlugin {
 
     public static final String PREFIX = "&a&l| &2Vote &8» ";
-    private DBManager dbManager;
+    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private MongoClient mongoClient;
+    private MongoDatabase database;
+    private YamlConfiguration eventConfig;
 
     @Override
     public void onEnable() {
@@ -31,62 +50,81 @@ public final class VoteSystem extends JavaPlugin {
         if (!dir.isDirectory()) {
             //noinspection ResultOfMethodCallIgnored
             dir.mkdirs();
-
-            try {
-                extractFile(dir, "start_event.sh");
-                extractFile(dir, "stop_event.sh");
-            } catch (IOException e) {
-                e.printStackTrace();
+        }
+        if (Utils.extractPluginResource(this, "event.yml")) {
+            eventConfig = YamlConfiguration.loadConfiguration(new File(dir, "event.yml"));
+            String scheduled = eventConfig.getString("next-event");
+            LocalDateTime next;
+            if (scheduled == null || (next = LocalDateTime.parse(scheduled)).isBefore(LocalDateTime.now())) {
+                next = LocalDateTime.now()
+                        .with(TemporalAdjusters.next(DayOfWeek.FRIDAY))
+                        .with(TemporalAdjusters.next(DayOfWeek.FRIDAY))
+                        .withHour(8)
+                        .withMinute(0)
+                        .withSecond(0)
+                        .withNano(0);
             }
+            scheduleNextEvent(next);
         }
 
-        dbManager = new DBManager();
-        dbManager.connect();
+        CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
+        CodecRegistry pojoCodecRegistry = CodecRegistries.fromRegistries(
+                MongoClientSettings.getDefaultCodecRegistry(),
+                CodecRegistries.fromProviders(pojoCodecProvider)
+        );
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(new ConnectionString("mongodb://localhost:27017"))
+                .codecRegistry(pojoCodecRegistry)
+                .build();
+        mongoClient = MongoClients.create(settings);
+        database = mongoClient.getDatabase("sb_vote_system");
 
-        MongoCollection<Document> eventDocs = dbManager.getDatabase().getCollection("event");
-        if (eventDocs.countDocuments() < 1) {
-            eventDocs.insertOne(EventAdaptor.generateNewEvent());
-        }
-
-        new VoteBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(10),
-            TimeUtil.minutesToTicks(20));
-        new VoteEventBroadcast(this).runTaskTimer(this, TimeUtil.minutesToTicks(20),
-            TimeUtil.minutesToTicks(20));
+        new VoteBroadcast(this).runTaskTimer(this, Utils.minutesToTicks(10),
+                Utils.minutesToTicks(20));
+        new VoteEventBroadcast(this).runTaskTimer(this, Utils.minutesToTicks(20),
+                Utils.minutesToTicks(20));
 
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new IncomingVoteListener(), this);
         pm.registerEvents(new PlayerJoinListener(this), this);
 
-        PluginCommand command = getCommand("voteadmin");
-        if (command != null) {
-            command.setExecutor(new VoteAdminCommand(this));
-        }
-        command = getCommand("vote");
-        if(command != null) {
-            command.setExecutor(new VoteCommand(this));
-        }
+        registerCommand("voteadmin", new VoteAdminCommand(this));
+        registerCommand("vote", new VoteCommand(this));
     }
 
-    private void extractFile(File dir, String resource) throws IOException {
-        File start = new File(dir, resource);
-        if (start.isFile()) {
+    private void registerCommand(String command, CommandExecutor executor) {
+        PluginCommand cmd = getCommand(command);
+        if (cmd == null) {
+            getLogger().severe("No entry for command " + command + " found in the plugin.yml.");
             return;
         }
-        InputStream stream = getResource(start.getName());
-        if (stream == null) {
-            getLogger().warning(String.format("Missing \"%s\" file in resources.", resource));
-            return;
-        }
-        Files.copy(stream, start.toPath());
+        cmd.setExecutor(executor);
+    }
+
+    private void scheduleNextEvent(LocalDateTime next) {
+        long startDelay = next.toInstant(ZoneOffset.ofHours(1)).toEpochMilli() - System.currentTimeMillis();
+        executorService.schedule(VoteUtils::startEvent, startDelay, TimeUnit.MILLISECONDS);
+        getLogger().info("Next event START scheduled at: " + next.format(VoteUtils.DTF));
+
+        LocalDateTime stop = next.plusDays(3).withHour(0);
+        long stopDelay = stop.toInstant(ZoneOffset.ofHours(1)).toEpochMilli() - System.currentTimeMillis();
+        executorService.schedule(VoteUtils::stopEvent, stopDelay, TimeUnit.MILLISECONDS);
+        getLogger().info("Next event END scheduled at: " + stop.format(VoteUtils.DTF));
+
+        eventConfig.set("next-event", next.toString());
     }
 
     @Override
     public void onDisable() {
-        dbManager.disconnect();
+        mongoClient.close();
     }
 
-    public DBManager getDbManager() {
-        return dbManager;
+    public MongoCollection<User> getUserCollection() {
+        return database.getCollection("users", User.class);
     }
 
+    @Nullable
+    public YamlConfiguration getEventConfig() {
+        return eventConfig;
+    }
 }

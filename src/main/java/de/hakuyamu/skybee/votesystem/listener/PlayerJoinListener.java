@@ -1,11 +1,9 @@
 package de.hakuyamu.skybee.votesystem.listener;
 
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Updates;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
-import de.hakuyamu.skybee.votesystem.util.VoteUtil;
-import org.bson.Document;
+import de.hakuyamu.skybee.votesystem.models.User;
+import de.hakuyamu.skybee.votesystem.util.VoteUtils;
 import org.bson.conversions.Bson;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -25,20 +23,17 @@ public class PlayerJoinListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
         Bson filter = Filters.eq("uuid", uuid.toString());
-        MongoDatabase db = main.getDbManager().getDatabase();
-        Document user = db.getCollection("users").find(filter).first();
+        User user = main.getUserCollection().find(filter).first();
         if (user == null) {
             return;
         }
 
-        long votes = (Long) user.get("votes");
-        for (int i = 0; i < (Long) user.get("queuedVotes"); i++) {
-            votes += 1L;
-            db.getCollection("users").updateOne(filter, Updates.set("votes", votes));
-            VoteUtil.giveVoteRewards(event.getPlayer());
+        for (int i = user.getVotes(); i < user.getQueuedVotes(); i++) {
+            user.setVotes(i);
+            VoteUtils.giveVoteRewards(event.getPlayer());
         }
-
-        db.getCollection("users").updateOne(filter, Updates.set("queuedVotes", 0L));
+        user.setQueuedVotes(0);
+        main.getUserCollection().replaceOne(filter, user);
     }
 
 }

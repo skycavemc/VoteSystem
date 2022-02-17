@@ -4,7 +4,7 @@ import de.hakuyamu.skybee.votesystem.models.FormattableString;
 
 public enum Message {
 
-    DATABASE_ERROR("&cIm Datenbanksystem liegt ein Fehler vor."),
+    INTERNAL_ERROR("&cEin interner Fehler ist aufgetreten. Siehe Konsole"),
     PLAYER_NOT_FOUND("&cDer Spieler %player konnte nicht gefunden werden."),
     INVALID_NUMBER("&c%number ist keine gültige Zahl."),
 
@@ -61,7 +61,6 @@ public enum Message {
     // voteadmin start subcommand
     VADMIN_START_FIRST("&e&lDas &2&lVote&d&lEvent &e&lwurde gestartet!"),
     VADMIN_START_ALREADY("&cDas Vote Event läuft bereits."),
-    VADMIN_START_WEEK("&eDiese Woche wird übersprungen."),
 
     // voteadmin stop subcommand
     VADMIN_STOP_SUCCESS("&aDu hast das Vote Event gestoppt."),

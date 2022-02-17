@@ -3,7 +3,7 @@ package de.hakuyamu.skybee.votesystem.listener;
 import com.vexsoftware.votifier.model.Vote;
 import com.vexsoftware.votifier.model.VotifierEvent;
 import de.hakuyamu.skybee.votesystem.enums.TrustedServices;
-import de.hakuyamu.skybee.votesystem.util.VoteUtil;
+import de.hakuyamu.skybee.votesystem.util.VoteUtils;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
@@ -16,7 +16,7 @@ public class IncomingVoteListener implements Listener {
             return;
         }
 
-        VoteUtil.processVote(vote.getUsername());
+        VoteUtils.processVote(vote.getUsername());
     }
 
 }

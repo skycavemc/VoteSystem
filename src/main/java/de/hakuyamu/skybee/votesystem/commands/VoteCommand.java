@@ -1,7 +1,6 @@
 package de.hakuyamu.skybee.votesystem.commands;
 
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
@@ -9,8 +8,8 @@ import de.hakuyamu.skybee.votesystem.enums.EventReward;
 import de.hakuyamu.skybee.votesystem.enums.Message;
 import de.hakuyamu.skybee.votesystem.enums.PersonalReward;
 import de.hakuyamu.skybee.votesystem.enums.TrustedServices;
-import de.hakuyamu.skybee.votesystem.util.VoteUtil;
-import org.bson.Document;
+import de.hakuyamu.skybee.votesystem.models.User;
+import de.hakuyamu.skybee.votesystem.util.VoteUtils;
 import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -23,7 +22,10 @@ import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 public class VoteCommand implements CommandExecutor, TabCompleter {
 
@@ -33,7 +35,6 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
         this.main = main;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (!(sender instanceof Player)) {
@@ -54,23 +55,23 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        MongoCollection<Document> userCollection = main.getDbManager().getDatabase().getCollection("users");
+        MongoCollection<User> userCollection = main.getUserCollection();
 
         switch (args[0]) {
             case "event":
                 sender.sendMessage("");
-                sender.sendMessage(VoteUtil.getVoteEventStatus());
+                sender.sendMessage(VoteUtils.getVoteEventStatus());
                 sender.sendMessage("");
                 for (EventReward reward : EventReward.values()) {
-                    sender.sendMessage(VoteUtil.getVoteEventLine(reward));
+                    sender.sendMessage(VoteUtils.getVoteEventLine(reward));
                 }
                 break;
             case "ziel":
                 sender.sendMessage("");
-                sender.sendMessage(VoteUtil.getVoteZielStatus(player));
+                sender.sendMessage(VoteUtils.getVoteZielStatus(player));
                 sender.sendMessage("");
                 for (PersonalReward reward : PersonalReward.values()) {
-                    sender.sendMessage(VoteUtil.getVoteZielLine(player, reward));
+                    sender.sendMessage(VoteUtils.getVoteZielLine(player, reward));
                 }
                 break;
             case "help":
@@ -82,13 +83,13 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                 if (args.length < 2) {
                     UUID uuid = player.getUniqueId();
                     Bson filter = Filters.eq("uuid", uuid.toString());
-                    Document user = userCollection.find(filter).first();
+                    User user = userCollection.find(filter).first();
                     if (user == null) {
                         sender.sendMessage(Message.VOTE_COUNT.getString()
                                 .replace("%votes", "0").get());
                     } else {
                         sender.sendMessage(Message.VOTE_COUNT.getString()
-                                .replace("%votes", String.valueOf(user.get("votes"))).get());
+                                .replace("%votes", "" + user.getVotes()).get());
                     }
                 } else {
                     Player other = Bukkit.getPlayer(args[1]);
@@ -106,7 +107,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                     }
 
                     Bson filter = Filters.eq("uuid", uuid.toString());
-                    Document user = userCollection.find(filter).first();
+                    User user = userCollection.find(filter).first();
                     if (user == null) {
                         sender.sendMessage(Message.VOTE_COUNT_OTHER.getString()
                                 .replace("%player", args[1])
@@ -114,7 +115,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                     } else {
                         sender.sendMessage(Message.VOTE_COUNT_OTHER.getString()
                                 .replace("%player", args[1])
-                                .replace("%votes", String.valueOf(user.get("votes"))).get());
+                                .replace("%votes", "" + user.getVotes()).get());
                     }
                 }
                 break;
@@ -143,7 +144,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                 }
                 int skip = (page - 1) * 10;
 
-                List<Document> users = userCollection.find(Filters.gt("votes", 0L))
+                List<User> users = userCollection.find(Filters.gt("votes", 0L))
                         .sort(Sorts.descending("votes"))
                         .skip(skip)
                         .limit(10)
@@ -153,13 +154,13 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                         .replace("%page", String.valueOf(page))
                         .replace("%amount", String.valueOf(pages)).get(false));
                 int rank = skip + 1;
-                for (Document user : users) {
-                    UUID uuid = UUID.fromString((String) user.get("uuid"));
+                for (User user : users) {
+                    UUID uuid = UUID.fromString(user.getUuid());
                     String name = Bukkit.getOfflinePlayer(uuid).getName();
                     sender.sendMessage(Message.VOTE_TOP_ENTRY.getString()
                             .replace("%rank", String.valueOf(rank))
                             .replace("%player", name)
-                            .replace("%votes", String.valueOf(user.get("votes"))).get(false));
+                            .replace("%votes", "" + user.getVotes()).get(false));
                     rank++;
                 }
                 sender.sendMessage(Message.VOTE_TOP_HEADER_FOOTER.getString()
