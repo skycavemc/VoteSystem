@@ -63,10 +63,6 @@
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
         <repository>
-            <id>bintray-repo</id>
-            <url>https://dl.bintray.com/ichbinjoe/public/</url>
-        </repository>
-        <repository>
             <id>jitpack</id>
             <url>https://jitpack.io</url>
         </repository>
