@@ -2,8 +2,8 @@ package de.hakuyamu.skybee.votesystem.runnables;
 
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
+import de.hakuyamu.skybee.votesystem.models.AutoSaveConfig;
 import de.hakuyamu.skybee.votesystem.util.Utils;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class VoteEventBroadcast extends BukkitRunnable {
@@ -16,7 +16,7 @@ public class VoteEventBroadcast extends BukkitRunnable {
 
     @Override
     public void run() {
-        YamlConfiguration event = main.getEventConfig();
+        AutoSaveConfig event = main.getEventConfig();
         if (event == null || !event.getBoolean("started")) {
             return;
         }

@@ -5,12 +5,12 @@ import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.EventReward;
 import de.hakuyamu.skybee.votesystem.enums.Message;
 import de.hakuyamu.skybee.votesystem.enums.PersonalReward;
+import de.hakuyamu.skybee.votesystem.models.AutoSaveConfig;
 import de.hakuyamu.skybee.votesystem.models.User;
 import org.bson.conversions.Bson;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -70,7 +70,7 @@ public class VoteUtils {
     }
 
     private static void processVoteForEvent() {
-        YamlConfiguration event = main.getEventConfig();
+        AutoSaveConfig event = main.getEventConfig();
         if (event == null) {
             main.getLogger().severe("Event config does not exist!");
             return;
@@ -117,7 +117,7 @@ public class VoteUtils {
     }
 
     private static void giveEventRewards(Player player) {
-        YamlConfiguration event = main.getEventConfig();
+        AutoSaveConfig event = main.getEventConfig();
         if (event == null) {
             main.getLogger().severe("Event config does not exist!");
             return;
@@ -147,7 +147,7 @@ public class VoteUtils {
     }
 
     public static String getVoteEventStatus() {
-        YamlConfiguration event = main.getEventConfig();
+        AutoSaveConfig event = main.getEventConfig();
         if (event == null) {
             main.getLogger().severe("Event config does not exist!");
             return Message.VOTE_EVENT_STATUS_INACTIVE.getString()
@@ -197,7 +197,7 @@ public class VoteUtils {
     }
 
     public static String getVoteEventLine(EventReward reward) {
-        YamlConfiguration event = main.getEventConfig();
+        AutoSaveConfig event = main.getEventConfig();
         if (event == null) {
             main.getLogger().severe("Event config does not exist!");
             return Message.VOTE_EVENT_LINE_NOT.getString()
@@ -259,7 +259,7 @@ public class VoteUtils {
         User user = main.getUserCollection().find(filter).first();
 
         Message message;
-        if (user == null || reward.getVotes() < user.getVotes()) {
+        if (user == null || user.getVotes() < reward.getVotes()) {
             message = Message.VOTE_ZIEL_LINE_NOT;
         } else {
             message = Message.VOTE_ZIEL_LINE_DONE;
@@ -273,7 +273,7 @@ public class VoteUtils {
     }
 
     public static void startEvent() {
-        YamlConfiguration event = main.getEventConfig();
+        AutoSaveConfig event = main.getEventConfig();
         if (event == null) {
             return;
         }
@@ -288,7 +288,7 @@ public class VoteUtils {
     }
 
     public static void stopEvent() {
-        YamlConfiguration event = main.getEventConfig();
+        AutoSaveConfig event = main.getEventConfig();
         if (event == null) {
             return;
         }

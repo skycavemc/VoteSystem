@@ -11,6 +11,7 @@ import de.hakuyamu.skybee.votesystem.commands.VoteAdminCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteCommand;
 import de.hakuyamu.skybee.votesystem.listener.IncomingVoteListener;
 import de.hakuyamu.skybee.votesystem.listener.PlayerJoinListener;
+import de.hakuyamu.skybee.votesystem.models.AutoSaveConfig;
 import de.hakuyamu.skybee.votesystem.models.User;
 import de.hakuyamu.skybee.votesystem.runnables.VoteBroadcast;
 import de.hakuyamu.skybee.votesystem.runnables.VoteEventBroadcast;
@@ -23,7 +24,6 @@ import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -42,30 +42,11 @@ public final class VoteSystem extends JavaPlugin {
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private MongoClient mongoClient;
     private MongoDatabase database;
-    private YamlConfiguration eventConfig;
+    private AutoSaveConfig eventConfig;
 
     @Override
     public void onEnable() {
-        File dir = getDataFolder();
-        if (!dir.isDirectory()) {
-            //noinspection ResultOfMethodCallIgnored
-            dir.mkdirs();
-        }
-        if (Utils.extractPluginResource(this, "event.yml")) {
-            eventConfig = YamlConfiguration.loadConfiguration(new File(dir, "event.yml"));
-            String scheduled = eventConfig.getString("next-event");
-            LocalDateTime next;
-            if (scheduled == null || (next = LocalDateTime.parse(scheduled)).isBefore(LocalDateTime.now())) {
-                next = LocalDateTime.now()
-                        .with(TemporalAdjusters.next(DayOfWeek.FRIDAY))
-                        .with(TemporalAdjusters.next(DayOfWeek.FRIDAY))
-                        .withHour(8)
-                        .withMinute(0)
-                        .withSecond(0)
-                        .withNano(0);
-            }
-            scheduleNextEvent(next);
-        }
+        reloadResources();
 
         CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
         CodecRegistry pojoCodecRegistry = CodecRegistries.fromRegistries(
@@ -92,6 +73,46 @@ public final class VoteSystem extends JavaPlugin {
         registerCommand("vote", new VoteCommand(this));
     }
 
+    public void reloadResources() {
+        File dir = getDataFolder();
+        if (!dir.isDirectory()) {
+            //noinspection ResultOfMethodCallIgnored
+            dir.mkdirs();
+        }
+
+        if (Utils.extractPluginResource(this, "event.yml")) {
+            eventConfig = new AutoSaveConfig(new File(dir, "event.yml"));
+            String scheduled = eventConfig.getString("next-event");
+            LocalDateTime next;
+            if (scheduled == null) {
+                next = LocalDateTime.now()
+                        .with(TemporalAdjusters.next(DayOfWeek.FRIDAY))
+                        .withHour(8)
+                        .withMinute(0)
+                        .withSecond(0)
+                        .withNano(0);
+            } else if ((next = LocalDateTime.parse(scheduled)).isBefore(LocalDateTime.now())) {
+                next = LocalDateTime.now()
+                        .with(TemporalAdjusters.next(DayOfWeek.FRIDAY))
+                        .with(TemporalAdjusters.next(DayOfWeek.FRIDAY))
+                        .withHour(8)
+                        .withMinute(0)
+                        .withSecond(0)
+                        .withNano(0);
+            }
+            long startDelay = next.toInstant(ZoneOffset.ofHours(1)).toEpochMilli() - System.currentTimeMillis();
+            executorService.schedule(VoteUtils::startEvent, startDelay, TimeUnit.MILLISECONDS);
+            getLogger().info("Next event START scheduled at: " + next.format(VoteUtils.DTF));
+
+            LocalDateTime stop = next.plusDays(3).withHour(0);
+            long stopDelay = stop.toInstant(ZoneOffset.ofHours(1)).toEpochMilli() - System.currentTimeMillis();
+            executorService.schedule(VoteUtils::stopEvent, stopDelay, TimeUnit.MILLISECONDS);
+            getLogger().info("Next event END scheduled at: " + stop.format(VoteUtils.DTF));
+
+            eventConfig.set("next-event", next.toString());
+        }
+    }
+
     private void registerCommand(String command, CommandExecutor executor) {
         PluginCommand cmd = getCommand(command);
         if (cmd == null) {
@@ -99,19 +120,6 @@ public final class VoteSystem extends JavaPlugin {
             return;
         }
         cmd.setExecutor(executor);
-    }
-
-    private void scheduleNextEvent(LocalDateTime next) {
-        long startDelay = next.toInstant(ZoneOffset.ofHours(1)).toEpochMilli() - System.currentTimeMillis();
-        executorService.schedule(VoteUtils::startEvent, startDelay, TimeUnit.MILLISECONDS);
-        getLogger().info("Next event START scheduled at: " + next.format(VoteUtils.DTF));
-
-        LocalDateTime stop = next.plusDays(3).withHour(0);
-        long stopDelay = stop.toInstant(ZoneOffset.ofHours(1)).toEpochMilli() - System.currentTimeMillis();
-        executorService.schedule(VoteUtils::stopEvent, stopDelay, TimeUnit.MILLISECONDS);
-        getLogger().info("Next event END scheduled at: " + stop.format(VoteUtils.DTF));
-
-        eventConfig.set("next-event", next.toString());
     }
 
     @Override
@@ -124,7 +132,7 @@ public final class VoteSystem extends JavaPlugin {
     }
 
     @Nullable
-    public YamlConfiguration getEventConfig() {
+    public AutoSaveConfig getEventConfig() {
         return eventConfig;
     }
 }
