@@ -8,6 +8,7 @@ import de.hakuyamu.skybee.votesystem.enums.EventReward;
 import de.hakuyamu.skybee.votesystem.enums.Message;
 import de.hakuyamu.skybee.votesystem.enums.PersonalReward;
 import de.hakuyamu.skybee.votesystem.enums.TrustedServices;
+import de.hakuyamu.skybee.votesystem.models.AutoSaveConfig;
 import de.hakuyamu.skybee.votesystem.models.User;
 import de.hakuyamu.skybee.votesystem.util.VoteUtils;
 import org.bson.conversions.Bson;
@@ -22,6 +23,7 @@ import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,11 +39,10 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player player)) {
             main.getLogger().severe("This command is for players only.");
             return true;
         }
-        Player player = (Player) sender;
 
         if (args.length < 1) {
             sender.sendMessage("");
@@ -58,14 +59,6 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
         MongoCollection<User> userCollection = main.getUserCollection();
 
         switch (args[0]) {
-            case "event":
-                sender.sendMessage("");
-                sender.sendMessage(VoteUtils.getVoteEventStatus());
-                sender.sendMessage("");
-                for (EventReward reward : EventReward.values()) {
-                    sender.sendMessage(VoteUtils.getVoteEventLine(reward));
-                }
-                break;
             case "ziel":
                 sender.sendMessage("");
                 sender.sendMessage(VoteUtils.getVoteZielStatus(player));
@@ -73,11 +66,6 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                 for (PersonalReward reward : PersonalReward.values()) {
                     sender.sendMessage(VoteUtils.getVoteZielLine(player, reward));
                 }
-                break;
-            case "help":
-                sender.sendMessage(Message.VOTE_HELP.getString().get(false));
-                sender.sendMessage(Message.VOTE_HELP_EVENT.getString().get(false));
-                sender.sendMessage(Message.VOTE_HELP_ZIEL.getString().get(false));
                 break;
             case "count":
                 if (args.length < 2) {
@@ -167,6 +155,38 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                         .replace("%page", String.valueOf(page))
                         .replace("%amount", String.valueOf(pages)).get(false));
                 break;
+            case "event":
+                sender.sendMessage("");
+                sender.sendMessage(VoteUtils.getVoteEventStatus());
+                sender.sendMessage("");
+                for (EventReward reward : EventReward.values()) {
+                    sender.sendMessage(VoteUtils.getVoteEventLine(reward));
+                }
+                break;
+            case "next":
+                AutoSaveConfig config = main.getEventConfig();
+                if (config == null) {
+                    sender.sendMessage(Message.VOTE_NEXT.getString().replace("%date", "&cnoch nicht geplant").get());
+                    break;
+                }
+
+                String scheduled = config.getString("next-event");
+                LocalDateTime next;
+                if (scheduled == null || (next = LocalDateTime.parse(scheduled)).isBefore(LocalDateTime.now())) {
+                    sender.sendMessage(Message.VOTE_NEXT.getString().replace("%date", "&cnoch nicht geplant").get());
+                    break;
+                }
+
+                sender.sendMessage(Message.VOTE_NEXT.getString().replace("%date", "&2" + next.format(VoteUtils.DTF)).get());
+                break;
+            case "help":
+                sender.sendMessage(Message.VOTE_HELP.getString().get(false));
+                sender.sendMessage(Message.VOTE_HELP_ZIEL.getString().get(false));
+                sender.sendMessage(Message.VOTE_HELP_COUNT.getString().get(false));
+                sender.sendMessage(Message.VOTE_HELP_TOP.getString().get(false));
+                sender.sendMessage(Message.VOTE_HELP_EVENT.getString().get(false));
+                sender.sendMessage(Message.VOTE_HELP_NEXT.getString().get(false));
+                break;
             default:
                 sender.sendMessage(Message.VOTE_WRONG_ARGS.getString().get());
         }
@@ -185,6 +205,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
             arguments.add("ziel");
             arguments.add("count");
             arguments.add("top");
+            arguments.add("next");
             StringUtil.copyPartialMatches(args[0], arguments, completions);
         }
 

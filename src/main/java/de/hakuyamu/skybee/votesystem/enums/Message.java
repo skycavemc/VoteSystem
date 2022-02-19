@@ -24,9 +24,12 @@ public enum Message {
     VOTE_INFO3("&8» &2+ &a20% Chance auf &615 Pollen"),
 
     // vote help
-    VOTE_HELP("&a/vote\n&8» &7Zeigt dir die Vote Links an"),
-    VOTE_HELP_EVENT("&a/vote event\n&8» &7Zeigt dir den Fortschritt des VoteEvents an"),
-    VOTE_HELP_ZIEL("&a/vote ziel\n&8» &7Zeigt dir deine persönlichen VoteZiele an"),
+    VOTE_HELP("&a/vote\n&8» &7Zeigt dir die Vote Links an."),
+    VOTE_HELP_ZIEL("&a/vote ziel\n&8» &7Zeigt dir deine persönlichen VoteZiele an."),
+    VOTE_HELP_COUNT("&a/vote count [<Spieler>]\n&8» &7Gibt an, wie viele Votes du selbst oder der angegebene Spieler hat."),
+    VOTE_HELP_TOP("&a/vote top [<Seite>]\n&8» &7Listet die Spieler mit den meisten Votes auf, unterteilt in Seiten."),
+    VOTE_HELP_EVENT("&a/vote event\n&8» &7Zeigt dir den Fortschritt des VoteEvents an."),
+    VOTE_HELP_NEXT("&a/vote next\n&8» &7Zeigt dir an, wann das nächste Vote Event ist."),
 
     // vote event subcommand
     VOTE_EVENT_STATUS_ACTIVE("&8» &6Status: &aaktiv, &6Votes: &a%votes\n" +
@@ -49,14 +52,18 @@ public enum Message {
     VOTE_TOP_ENTRY("&6%rank. &a%player: &e%votes Votes"),
     VOTE_TOP_NO_ENTRIES("&cEs sind keine Einträge vorhanden."),
 
+    // vote next subcommand
+    VOTE_NEXT("&7Das nächste &aVote-Event &7findet statt am: %date"),
+
     // voteadmin command
     VADMIN_WRONG_ARGS("&cUngültiges Argument. Siehe /voteadmin help"),
 
     // voteadmin help
-    VADMIN_HELP_START("&a/vadmin start\n&8» &7Startet das Vote Event"),
-    VADMIN_HELP_STOP("&a/vadmin stop\n&8» &7Stoppt das Vote Event"),
-    VADMIN_HELP_CLEAR("&a/vadmin clear\n&8» &7Setzt alle Daten zurück"),
-    VADMIN_HELP_FAKE("&a/vadmin fake\n&8» &7Führt einen Fake Vote aus"),
+    VADMIN_HELP_START("&a/vadmin start\n&8» &7Startet das Vote Event."),
+    VADMIN_HELP_STOP("&a/vadmin stop\n&8» &7Stoppt das Vote Event."),
+    VADMIN_HELP_CLEAR("&a/vadmin clear\n&8» &7Setzt alle Daten zurück."),
+    VADMIN_HELP_FAKE("&a/vadmin fake\n&8» &7Führt einen Fake Vote aus."),
+    VADMIN_HELP_RELOAD("&a/vadmin reload\n&8» &7Lädt die Konfiguration neu."),
 
     // voteadmin start subcommand
     VADMIN_START_FIRST("&e&lDas &2&lVote&d&lEvent &e&lwurde gestartet!"),

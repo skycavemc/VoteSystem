@@ -3,13 +3,13 @@ package de.hakuyamu.skybee.votesystem.commands;
 import com.mongodb.client.MongoCollection;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
+import de.hakuyamu.skybee.votesystem.models.AutoSaveConfig;
 import de.hakuyamu.skybee.votesystem.models.User;
 import de.hakuyamu.skybee.votesystem.util.VoteUtils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,15 +29,12 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length < 1) {
-            sender.sendMessage(Message.VADMIN_HELP_START.getString().get(false));
-            sender.sendMessage(Message.VADMIN_HELP_STOP.getString().get(false));
-            sender.sendMessage(Message.VADMIN_HELP_CLEAR.getString().get(false));
-            sender.sendMessage(Message.VADMIN_HELP_FAKE.getString().get(false));
+            sendHelp(sender);
             return true;
         }
 
         MongoCollection<User> userCollection = main.getUserCollection();
-        YamlConfiguration event = main.getEventConfig();
+        AutoSaveConfig event = main.getEventConfig();
         if (event == null) {
             main.getLogger().severe("Event config does not exist!");
             sender.sendMessage(Message.INTERNAL_ERROR.getString().get());
@@ -45,42 +42,48 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
         }
 
         switch (args[0]) {
-            case "start":
+            case "start" -> {
                 if (event.getBoolean("started")) {
                     sender.sendMessage(Message.VADMIN_START_ALREADY.getString().get());
                     break;
                 }
                 VoteUtils.startEvent();
-                break;
-            case "stop":
+            }
+            case "stop" -> {
                 if (!event.getBoolean("started")) {
                     sender.sendMessage(Message.VADMIN_STOP_NOT.getString().get());
                     break;
                 }
                 VoteUtils.stopEvent();
                 sender.sendMessage(Message.VADMIN_STOP_SUCCESS.getString().get());
-                break;
-            case "fake":
+            }
+            case "fake" -> {
                 if (args.length < 2) {
                     sender.sendMessage(Message.VADMIN_FAKE.getString().get());
                     break;
                 }
                 sender.sendMessage(Message.VADMIN_FAKE_EXE.getString().replace("%name", args[1]).get());
                 VoteUtils.processVote(args[1]);
-                break;
-            case "clear":
+            }
+            case "clear" -> {
                 userCollection.drop();
                 sender.sendMessage(Message.VADMIN_CLEAR.getString().get());
-                break;
-            case "help":
-                sender.sendMessage(Message.VADMIN_HELP_START.getString().get(false));
-                sender.sendMessage(Message.VADMIN_HELP_STOP.getString().get(false));
-                sender.sendMessage(Message.VADMIN_HELP_CLEAR.getString().get(false));
-                break;
-            default:
-                sender.sendMessage(Message.VADMIN_WRONG_ARGS.getString().get());
+            }
+            case "reload" -> {
+
+            }
+            case "help" -> sendHelp(sender);
+            default -> sender.sendMessage(Message.VADMIN_WRONG_ARGS.getString().get());
         }
         return true;
+    }
+
+    private void sendHelp(CommandSender sender) {
+        sender.sendMessage(Message.VADMIN_HELP_START.getString().get(false));
+        sender.sendMessage(Message.VADMIN_HELP_STOP.getString().get(false));
+        sender.sendMessage(Message.VADMIN_HELP_CLEAR.getString().get(false));
+        sender.sendMessage(Message.VADMIN_HELP_FAKE.getString().get(false));
+        sender.sendMessage(Message.VADMIN_HELP_RELOAD.getString().get(false));
     }
 
     @Override
