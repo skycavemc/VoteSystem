@@ -22,7 +22,7 @@ public class VoteBroadcast extends BukkitRunnable {
     @Override
     public void run() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            Bson filter = Filters.eq("uuid", player.getUniqueId());
+            Bson filter = Filters.eq("uuid", player.getUniqueId().toString());
             User user = main.getUserCollection().find(filter).first();
 
             if (user == null) {
