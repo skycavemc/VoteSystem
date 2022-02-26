@@ -82,6 +82,19 @@ public final class VoteSystem extends JavaPlugin {
 
         if (Utils.extractPluginResource(this, "event.yml")) {
             eventConfig = new AutoSaveConfig(new File(dir, "event.yml"));
+            if (eventConfig.getBoolean("started")) {
+                LocalDateTime stop = LocalDateTime.now()
+                        .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
+                        .withHour(0)
+                        .withMinute(0)
+                        .withSecond(0)
+                        .withNano(0);
+                long stopDelay = stop.toInstant(ZoneOffset.ofHours(1)).toEpochMilli() - System.currentTimeMillis();
+                executorService.schedule(VoteUtils::stopEvent, stopDelay, TimeUnit.MILLISECONDS);
+                getLogger().info("Event is running, event END scheduled at: " + stop.format(VoteUtils.DTF));
+                return;
+            }
+
             String scheduled = eventConfig.getString("next-event");
             LocalDateTime next;
             if (scheduled == null) {

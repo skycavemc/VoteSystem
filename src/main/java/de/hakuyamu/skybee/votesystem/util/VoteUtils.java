@@ -279,6 +279,7 @@ public class VoteUtils {
         }
         if (!event.getBoolean("started")) {
             main.getUserCollection().drop();
+            event.set("votes", 0);
             event.set("started", true);
             event.set("start-timestamp", LocalDateTime.now().toString());
             Utils.broadcast("");
