@@ -127,9 +127,7 @@ public class VoteCommand implements CommandExecutor, TabCompleter {
                 }
 
                 int pages = (int) (entries / 10 + 1);
-                if (page > pages) {
-                    page = pages;
-                }
+                page = Math.min(page, pages);
                 int skip = (page - 1) * 10;
 
                 List<User> users = userCollection.find(Filters.gt("votes", 0L))
