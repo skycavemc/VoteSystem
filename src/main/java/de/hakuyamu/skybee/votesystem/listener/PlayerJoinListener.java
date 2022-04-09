@@ -28,8 +28,8 @@ public class PlayerJoinListener implements Listener {
             return;
         }
 
-        for (int i = user.getVotes(); i < user.getQueuedVotes(); i++) {
-            user.setVotes(i);
+        for (int i = 0; i < user.getQueuedVotes(); i++) {
+            user.setVotes(user.getVotes() + 1);
             VoteUtils.giveVoteRewards(event.getPlayer());
         }
         user.setQueuedVotes(0);
