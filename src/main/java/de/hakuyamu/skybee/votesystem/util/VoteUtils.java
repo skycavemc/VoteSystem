@@ -13,6 +13,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,7 +53,7 @@ public class VoteUtils {
         main.getLogger().info(name + " voted for the server, vote saved in their queue.");
     }
 
-    private static void processVoteForUser(UUID uuid, boolean offline) {
+    private static void processVoteForUser(@NotNull UUID uuid, boolean offline) {
         Bson filter = Filters.eq("uuid", uuid.toString());
         User user = main.getUserCollection().find(filter).first();
         if (user == null) {
@@ -78,7 +79,7 @@ public class VoteUtils {
         event.set("votes", event.getInt("votes") + 1);
     }
 
-    public static void giveVoteRewards(Player player) {
+    public static void giveVoteRewards(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         User user = main.getUserCollection().find(Filters.eq("uuid", uuid.toString())).first();
         if (user == null) {
@@ -230,7 +231,7 @@ public class VoteUtils {
                 .get(false);
     }
 
-    public static String getVoteZielStatus(Player player) {
+    public static String getVoteZielStatus(@NotNull Player player) {
         Bson filter = Filters.eq("uuid", player.getUniqueId().toString());
         User user = main.getUserCollection().find(filter).first();
         if (user == null) {
@@ -245,6 +246,7 @@ public class VoteUtils {
         for (PersonalReward rew : PersonalReward.values()) {
             if (rew.getVotes() > user.getVotes()) {
                 votesUntil = "noch " + (rew.getVotes() - user.getVotes()) + " Votes";
+                break;
             }
         }
 
@@ -254,7 +256,7 @@ public class VoteUtils {
                 .get(false);
     }
 
-    public static String getVoteZielLine(Player player, PersonalReward reward) {
+    public static String getVoteZielLine(@NotNull Player player, PersonalReward reward) {
         Bson filter = Filters.eq("uuid", player.getUniqueId().toString());
         User user = main.getUserCollection().find(filter).first();
 
