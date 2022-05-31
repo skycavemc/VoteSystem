@@ -13,4 +13,6 @@ commands:
     permission: skybee.votesystem.command.admin
     aliases: [ vadmin ]
   vcshop:
-    aliases: [ votecoinshop ]
+    aliases: [ votecoinshop, pshop ]
+  vc:
+    aliases: [ votecoins, pollen ]

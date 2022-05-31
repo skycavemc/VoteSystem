@@ -8,6 +8,7 @@ import de.hakuyamu.skybee.votesystem.models.User;
 import de.leonheuer.mcguiapi.gui.GUI;
 import de.leonheuer.mcguiapi.gui.GUIPattern;
 import de.leonheuer.mcguiapi.utils.ItemBuilder;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bson.conversions.Bson;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -15,6 +16,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 public class VCShopCommand implements CommandExecutor {
@@ -39,8 +41,17 @@ public class VCShopCommand implements CommandExecutor {
         GUI gui = main.getGuiFactory().createGUI(3, "&3VoteCoin Shop")
                 .formatPattern(pattern);
         for (VCShopItem item : VCShopItem.values()) {
-            gui.setItem(item.getRow(), item.getColumn(), item.getIcon(), event -> {
+            ItemStack icon = ItemBuilder.of(item.getIcon()).description(
+                    "&7Klicke, um &b" + item.getTitle(),
+                    "&7für &3" + item.getCost() + " VoteCoins &7zu kaufen."
+            ).asItem();
+            gui.setItem(item.getRow(), item.getColumn(), icon, event -> {
                 // TODO check space
+                if (item.getCost() < 0) {
+                    player.sendMessage(Message.VCSHOP_SOON.getString().get());
+                    player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, .7f, .7f);
+                    return;
+                }
                 Bson filter = Filters.eq("uuid", player.getUniqueId());
                 User user = main.getUserCollection().find(filter).first();
                 if (user == null || user.getVoteCoins() < item.getCost()) {
@@ -50,9 +61,8 @@ public class VCShopCommand implements CommandExecutor {
                 }
                 item.getAction().accept(player);
                 user.setVoteCoins(user.getVoteCoins() - item.getCost());
-                //noinspection deprecation
                 player.sendMessage(Message.VCSHOP_BUY.getString()
-                        .replace("%item", item.getIcon().getItemMeta().getDisplayName())
+                        .replace("%item", item.getTitle())
                         .replace("%amount", "" + item.getCost())
                         .get());
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, .7f, .7f);

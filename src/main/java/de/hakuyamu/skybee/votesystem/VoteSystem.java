@@ -7,6 +7,8 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.lang.Nullable;
+import de.hakuyamu.skybee.votesystem.commands.VCCommand;
+import de.hakuyamu.skybee.votesystem.commands.VCShopCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteAdminCommand;
 import de.hakuyamu.skybee.votesystem.commands.VoteCommand;
 import de.hakuyamu.skybee.votesystem.listener.IncomingVoteListener;
@@ -83,6 +85,8 @@ public final class VoteSystem extends JavaPlugin {
 
         registerCommand("voteadmin", new VoteAdminCommand(this));
         registerCommand("vote", new VoteCommand(this));
+        registerCommand("vcshop", new VCShopCommand(this));
+        registerCommand("vc", new VCCommand(this));
     }
 
     private boolean setupEconomy() {
