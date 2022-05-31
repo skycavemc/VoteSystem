@@ -41,8 +41,4 @@ public class Utils {
         main.getServer().broadcast(Component.text(text));
     }
 
-    public static void executeConsoleCommand(String command) {
-        main.getServer().dispatchCommand(main.getServer().getConsoleSender(), command);
-    }
-
 }

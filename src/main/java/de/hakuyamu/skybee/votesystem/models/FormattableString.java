@@ -2,6 +2,7 @@ package de.hakuyamu.skybee.votesystem.models;
 
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import org.bukkit.ChatColor;
+import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("unused")
 public class FormattableString {
@@ -28,7 +29,7 @@ public class FormattableString {
         return result;
     }
 
-    public String get(Boolean prefix) {
+    public String get(@NotNull Boolean prefix) {
         if (prefix) {
             result = VoteSystem.PREFIX + result;
         }
@@ -36,7 +37,7 @@ public class FormattableString {
         return result;
     }
 
-    public String get(Boolean prefix, Boolean formatted) {
+    public String get(@NotNull Boolean prefix, Boolean formatted) {
         if (prefix) {
             result = VoteSystem.PREFIX + result;
         }

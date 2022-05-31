@@ -1,16 +1,19 @@
 package de.hakuyamu.skybee.votesystem.enums;
 
 import de.hakuyamu.skybee.votesystem.models.FormattableString;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 public enum Message {
 
     INTERNAL_ERROR("&cEin interner Fehler ist aufgetreten. Siehe Konsole"),
     PLAYER_NOT_FOUND("&cDer Spieler %player konnte nicht gefunden werden."),
     INVALID_NUMBER("&c%number ist keine gültige Zahl."),
+    PLAYER_ONLY("&cDieser Befehl ist nur für Spieler."),
 
     // vote rewards
-    VOTE_DEFAULT("&b&k!!!&r &3%player &7hat gevoted und &610 &ePollen &7erhalten! &3/vote"),
-    VOTE_LUCK("&b&k!!!&r &3%player &7hat Glück und erhält &615 &ePollen&7! &3/vote"),
+    VOTE_DEFAULT("&b&k!!!&r &3%player &7hat gevoted und &310 &bVoteCoins &7erhalten! &3/vote"),
+    VOTE_LUCK("&b&k!!!&r &3%player &7hat Glück und erhält &315 &bVoteCoins&7! &3/vote"),
     VOTE_ZIEL_REACHED("&3%player &7hat das persönliche Ziel &6%votes Votes &7erreicht und erhält %reward&7!"),
     VOTE_EVENT_REACHED("&aDas &2%number. VoteEvent Ziel &avon &d%votes Votes &awurde erreicht! &8(&7/vote event&8)"),
     VOTE_EVENT_REWARD("&eJeder Spieler erhält %reward!"),
@@ -19,9 +22,9 @@ public enum Message {
 
     // vote command
     VOTE_WRONG_ARGS("&cUngültiges Argument. Siehe /vote help"),
-    VOTE_INFO1("&8» &7Pro Vote &610 Pollen"),
+    VOTE_INFO1("&8» &7Pro Vote &310 &bVoteCoins"),
     VOTE_INFO2("&8» &2+ &aPersönliche Ziele &8(&7/vote ziel&8)"),
-    VOTE_INFO3("&8» &2+ &a20% Chance auf &615 Pollen"),
+    VOTE_INFO3("&8» &2+ &a20% Chance auf &315 &bVoteCoins"),
 
     // vote help
     VOTE_HELP("&a/vote\n&8» &7Zeigt dir die Vote Links an."),
@@ -79,6 +82,13 @@ public enum Message {
     // voteadmin fake subcommand
     VADMIN_FAKE("&e/vadmin fake <Spieler>"),
     VADMIN_FAKE_EXE("&aFühre Fake Vote für %name aus..."),
+
+    // voteadmin reload subcommand
+    VADMIN_RELOAD("&aDas Plugin wurde neugeladen."),
+
+    // vcshop
+    VCSHOP_NOT_ENOUGH("&cDu hast nicht genug VoteCoins."),
+    VCSHOP_BUY("&7Du hast &a%item &7aus dem &3VoteCoinShop &7für &3%amount &bVoteCoins &7erhalten."),
     ;
 
     private final String string;
@@ -87,7 +97,8 @@ public enum Message {
         this.string = string;
     }
 
-    public FormattableString getString() {
+    @Contract(value = " -> new", pure = true)
+    public @NotNull FormattableString getString() {
         return new FormattableString(string);
     }
 

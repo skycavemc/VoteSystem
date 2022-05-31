@@ -13,15 +13,18 @@ public class User {
     private int votes;
     @BsonProperty(value = "last_vote_date")
     private String lastVoteDate;
+    @BsonProperty(value = "vote_coins")
+    private long voteCoins;
 
     public User() {
     }
 
-    public User(String uuid, int queuedVotes, int votes, String lastVoteDate) {
+    public User(String uuid, int queuedVotes, int votes, String lastVoteDate, long voteCoins) {
         this.uuid = uuid;
         this.queuedVotes = queuedVotes;
         this.votes = votes;
         this.lastVoteDate = lastVoteDate;
+        this.voteCoins = voteCoins;
     }
 
     public ObjectId getId() {
@@ -64,4 +67,11 @@ public class User {
         this.lastVoteDate = lastVoteDate;
     }
 
+    public long getVoteCoins() {
+        return voteCoins;
+    }
+
+    public void setVoteCoins(long voteCoins) {
+        this.voteCoins = voteCoins;
+    }
 }

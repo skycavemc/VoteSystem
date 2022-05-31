@@ -70,7 +70,8 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(Message.VADMIN_CLEAR.getString().get());
             }
             case "reload" -> {
-
+                main.reloadResources();
+                sender.sendMessage(Message.VADMIN_RELOAD.getString().get());
             }
             case "help" -> sendHelp(sender);
             default -> sender.sendMessage(Message.VADMIN_WRONG_ARGS.getString().get());
@@ -78,7 +79,7 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    private void sendHelp(CommandSender sender) {
+    private void sendHelp(@NotNull CommandSender sender) {
         sender.sendMessage(Message.VADMIN_HELP_START.getString().get(false));
         sender.sendMessage(Message.VADMIN_HELP_STOP.getString().get(false));
         sender.sendMessage(Message.VADMIN_HELP_CLEAR.getString().get(false));
@@ -87,7 +88,7 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String @NotNull [] args) {
         List<String> arguments = new ArrayList<>();
         List<String> completions = new ArrayList<>();
 

@@ -57,7 +57,7 @@ public class VoteUtils {
         Bson filter = Filters.eq("uuid", uuid.toString());
         User user = main.getUserCollection().find(filter).first();
         if (user == null) {
-            user = new User(uuid.toString(), 0, 0, LocalDate.now().toString());
+            user = new User(uuid.toString(), 0, 0, LocalDate.now().toString(), 0);
             main.getUserCollection().insertOne(user);
         }
 
@@ -92,11 +92,11 @@ public class VoteUtils {
 
         if (luck) {
             Utils.broadcast(Message.VOTE_LUCK.getString().replace("%player", player.getName()).get(false));
-            Utils.executeConsoleCommand("padmin give " + player.getName() + " 15");
+            user.setVoteCoins(user.getVoteCoins() + 15);
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
         } else {
             Utils.broadcast(Message.VOTE_DEFAULT.getString().replace("%player", player.getName()).get(false));
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "padmin give " + player.getName() + " 10");
+            user.setVoteCoins(user.getVoteCoins() + 10);
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 0.8f);
         }
 
@@ -107,9 +107,7 @@ public class VoteUtils {
                         .replace("%votes", String.valueOf(reward.getVotes()))
                         .replace("%reward", reward.getName())
                         .get());
-                for (String cmd : reward.getCommands()) {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replaceAll("%player", player.getName()));
-                }
+                reward.getAction().accept(player);
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.6f);
             }
         }

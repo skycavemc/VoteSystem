@@ -17,6 +17,8 @@ import de.hakuyamu.skybee.votesystem.runnables.VoteBroadcast;
 import de.hakuyamu.skybee.votesystem.runnables.VoteEventBroadcast;
 import de.hakuyamu.skybee.votesystem.util.Utils;
 import de.hakuyamu.skybee.votesystem.util.VoteUtils;
+import de.leonheuer.mcguiapi.gui.GUIFactory;
+import net.milkbowl.vault.economy.Economy;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -25,7 +27,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.time.DayOfWeek;
@@ -43,10 +47,18 @@ public final class VoteSystem extends JavaPlugin {
     private MongoClient mongoClient;
     private MongoDatabase database;
     private AutoSaveConfig eventConfig;
+    private GUIFactory guiFactory;
+    private Economy economy;
 
     @Override
     public void onEnable() {
         reloadResources();
+        guiFactory = new GUIFactory(this);
+        if (!setupEconomy()) {
+            getServer().getLogger().severe("Vault Dependency nicht gefunden, deaktiviere Plugin.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
 
         CodecProvider pojoCodecProvider = PojoCodecProvider.builder().automatic(true).build();
         CodecRegistry pojoCodecRegistry = CodecRegistries.fromRegistries(
@@ -71,6 +83,18 @@ public final class VoteSystem extends JavaPlugin {
 
         registerCommand("voteadmin", new VoteAdminCommand(this));
         registerCommand("vote", new VoteCommand(this));
+    }
+
+    private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            return false;
+        }
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+            return false;
+        }
+        economy = rsp.getProvider();
+        return true;
     }
 
     public void reloadResources() {
@@ -140,12 +164,20 @@ public final class VoteSystem extends JavaPlugin {
         mongoClient.close();
     }
 
-    public MongoCollection<User> getUserCollection() {
+    public @NotNull MongoCollection<User> getUserCollection() {
         return database.getCollection("users", User.class);
     }
 
     @Nullable
     public AutoSaveConfig getEventConfig() {
         return eventConfig;
+    }
+
+    public GUIFactory getGuiFactory() {
+        return guiFactory;
+    }
+
+    public Economy getEconomy() {
+        return economy;
     }
 }

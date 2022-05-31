@@ -2,7 +2,8 @@ name: VoteSystem
 version: ${project.version}
 main: de.hakuyamu.skybee.votesystem.VoteSystem
 api-version: 1.18
-depend: [ Votifier, SkyBeeCore ]
+depend: [ Votifier, Vault ]
+softdepend: [ SkyBeeCore ]
 authors: [ Hakuyamu ]
 
 commands:
@@ -10,5 +11,6 @@ commands:
     description: vote command
   voteadmin:
     permission: skybee.votesystem.command.admin
-    aliases:
-      - vadmin
+    aliases: [ vadmin ]
+  vcshop:
+    aliases: [ votecoinshop ]
