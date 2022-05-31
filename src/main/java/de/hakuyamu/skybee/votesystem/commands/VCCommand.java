@@ -27,7 +27,7 @@ public class VCCommand implements CommandExecutor {
                 sender.sendMessage(Message.PLAYER_ONLY.getString().get(false));
                 return true;
             }
-            User user = main.getUserCollection().find(Filters.eq("uuid", player.getUniqueId())).first();
+            User user = main.getUserCollection().find(Filters.eq("uuid", player.getUniqueId().toString())).first();
             long vc = 0;
             if (user != null) {
                 vc = user.getVoteCoins();
@@ -41,7 +41,7 @@ public class VCCommand implements CommandExecutor {
             sender.sendMessage(Message.PLAYER_NOT_FOUND.getString().replace("%player", args[0]).get());
             return true;
         }
-        User user = main.getUserCollection().find(Filters.eq("uuid", other.getUniqueId())).first();
+        User user = main.getUserCollection().find(Filters.eq("uuid", other.getUniqueId().toString())).first();
         long vc = 0;
         if (user != null) {
             vc = user.getVoteCoins();

@@ -81,7 +81,8 @@ public class VoteUtils {
 
     public static void giveVoteRewards(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
-        User user = main.getUserCollection().find(Filters.eq("uuid", uuid.toString())).first();
+        Bson filter = Filters.eq("uuid", uuid.toString());
+        User user = main.getUserCollection().find(filter).first();
         if (user == null) {
             main.getLogger().severe("User profile for " + player.getName() + "could not be found.");
             return;
@@ -99,6 +100,7 @@ public class VoteUtils {
             user.setVoteCoins(user.getVoteCoins() + 10);
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 0.8f);
         }
+        main.getUserCollection().replaceOne(filter, user);
 
         for (PersonalReward reward : PersonalReward.values()) {
             if (reward.getVotes() == user.getVotes()) {

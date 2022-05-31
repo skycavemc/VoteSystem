@@ -1,11 +1,15 @@
 package de.hakuyamu.skybee.votesystem.commands;
 
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
 import de.hakuyamu.skybee.votesystem.models.AutoSaveConfig;
 import de.hakuyamu.skybee.votesystem.models.User;
 import de.hakuyamu.skybee.votesystem.util.VoteUtils;
+import org.bson.conversions.Bson;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -27,7 +31,7 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
         if (args.length < 1) {
             sendHelp(sender);
             return true;
@@ -74,6 +78,41 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(Message.VADMIN_RELOAD.getString().get());
             }
             case "help" -> sendHelp(sender);
+            case "setvotecoins" -> {
+                if (args.length < 3) {
+                    sender.sendMessage(Message.VADMIN_SETVOTECOINS_SYNTAX.getString().get());
+                    return true;
+                }
+                OfflinePlayer other = Bukkit.getOfflinePlayerIfCached(args[1]);
+                if (other == null) {
+                    sender.sendMessage(Message.PLAYER_NOT_FOUND.getString().replace("%player", args[1]).get());
+                    return true;
+                }
+                int amount;
+                try {
+                    amount = Integer.parseInt(args[2]);
+                    if (amount < 0) {
+                        throw new NumberFormatException();
+                    }
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(Message.INVALID_NUMBER.getString().replace("%number", args[2]).get());
+                    return true;
+                }
+
+                Bson filter = Filters.eq("uuid", other.getUniqueId().toString());
+                User user = main.getUserCollection().find(filter).first();
+                if (user == null) {
+                    user = new User(other.getUniqueId().toString(), 0, 0, null, amount);
+                    main.getUserCollection().insertOne(user);
+                } else {
+                    user.setVoteCoins(amount);
+                    main.getUserCollection().replaceOne(filter, user);
+                }
+
+                sender.sendMessage(Message.VADMIN_SETVOTECOINS.getString()
+                        .replace("%player", other.getName())
+                        .replace("%amount", "" + amount).get());
+            }
             default -> sender.sendMessage(Message.VADMIN_WRONG_ARGS.getString().get());
         }
         return true;
@@ -85,6 +124,7 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Message.VADMIN_HELP_CLEAR.getString().get(false));
         sender.sendMessage(Message.VADMIN_HELP_FAKE.getString().get(false));
         sender.sendMessage(Message.VADMIN_HELP_RELOAD.getString().get(false));
+        sender.sendMessage(Message.VADMIN_HELP_SETVOTECOINS.getString().get(false));
     }
 
     @Override
@@ -97,6 +137,8 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
             arguments.add("stop");
             arguments.add("clear");
             arguments.add("fake");
+            arguments.add("reload");
+            arguments.add("setvotecoins");
             arguments.add("help");
 
             StringUtil.copyPartialMatches(args[0], arguments, completions);

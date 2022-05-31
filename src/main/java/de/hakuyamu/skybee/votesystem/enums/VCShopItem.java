@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -42,7 +43,8 @@ public enum VCShopItem {
             "Bienen Key", player ->
             Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(),
                     "k give bee " + player.getName() + " 1"), 100),
-    STARTER_PICKAXE(5, 2, ItemBuilder.of(Material.IRON_PICKAXE).name("&bStarter-Picke").asItem(),
+    STARTER_PICKAXE(5, 2, ItemBuilder.of(Material.IRON_PICKAXE).name("&bStarter-Picke")
+            .addFlags(ItemFlag.HIDE_ATTRIBUTES).asItem(),
             "Eisenspitzhacke", player ->
             player.getInventory().addItem(new ItemStack(Material.IRON_PICKAXE)), 10),
     STARTER_FOOD(5, 3, ItemBuilder.of(Material.BREAD).name("&bStarter-Essen").asItem(),
@@ -51,11 +53,13 @@ public enum VCShopItem {
     STARTER_BLOCKS(5, 4, ItemBuilder.of(Material.OAK_PLANKS).name("&bStarter-Blöcke").asItem(),
             "64 Eichenbretter", player ->
             player.getInventory().addItem(new ItemStack(Material.OAK_PLANKS, 64)), 10),
-    THE_UNBREAKABLE(1, 6, ItemBuilder.of(Material.DIAMOND_PICKAXE).name("&fThe &3Unbreakable").glowing().asItem(),
+    THE_UNBREAKABLE(1, 6, ItemBuilder.of(Material.DIAMOND_PICKAXE).name("&fThe &3Unbreakable")
+            .enchant(Enchantment.DURABILITY, 10).addFlags(ItemFlag.HIDE_ATTRIBUTES).asItem(),
             "The Unbreakable", player ->
             player.getInventory().addItem(ItemBuilder.of(Material.DIAMOND_PICKAXE).name("&fThe &3Unbreakable")
                     .enchant(Enchantment.DURABILITY, 10).asItem()), 150),
-    THE_FAST(1, 7, ItemBuilder.of(Material.DIAMOND_PICKAXE).name("&fThe &3Fast &fand the &3Furious").glowing().asItem(),
+    THE_FAST(1, 7, ItemBuilder.of(Material.DIAMOND_PICKAXE).name("&fThe &3Fast &fand the &3Furious")
+            .enchant(Enchantment.DIG_SPEED, 6).addFlags(ItemFlag.HIDE_ATTRIBUTES).asItem(),
             "The Fast and the Furious", player ->
             player.getInventory().addItem(ItemBuilder.of(Material.DIAMOND_PICKAXE).name("&fThe &3Fast &fand the &3Furious")
                     .enchant(Enchantment.DIG_SPEED, 6).asItem()), 150),
@@ -63,7 +67,7 @@ public enum VCShopItem {
             "Drohne (30 Tage)", player -> {
         Bukkit.broadcast(Component.text(Message.VCSHOP_DROHNE.getString().replace("%player", player.getName()).get()));
         Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(),
-                "/lp user " + player.getName() + " parent addtemp drohne 30d");
+                "lp user " + player.getName() + " parent addtemp drohne 30d");
     }, 1000),
     FLY(3, 7, ItemBuilder.of(Material.BARRIER).name("&cBald verfügbar").asItem(),
             "Fly (30 Tage)", player -> {}, -1),

@@ -38,21 +38,24 @@ public class VCShopCommand implements CommandExecutor {
                 .ofPattern("b_______b", "b_______b", "b_______b", "b_______b", "b_______b")
                 .startAtLine(1)
                 .withMaterial('b', ItemBuilder.of(Material.BLACK_STAINED_GLASS_PANE).name("§0").asItem());
-        GUI gui = main.getGuiFactory().createGUI(3, "&3VoteCoin Shop")
+        GUI gui = main.getGuiFactory().createGUI(5, "&3VoteCoin Shop")
                 .formatPattern(pattern);
         for (VCShopItem item : VCShopItem.values()) {
-            ItemStack icon = ItemBuilder.of(item.getIcon()).description(
-                    "&7Klicke, um &b" + item.getTitle(),
-                    "&7für &3" + item.getCost() + " VoteCoins &7zu kaufen."
-            ).asItem();
-            gui.setItem(item.getRow(), item.getColumn(), icon, event -> {
+            ItemBuilder icon = ItemBuilder.of(item.getIcon());
+            if (item.getCost() > 0) {
+                icon.description(
+                        "&7Klicke, um &b" + item.getTitle(),
+                        "&7für &3" + item.getCost() + " VoteCoins &7zu kaufen."
+                );
+            }
+            gui.setItem(item.getRow(), item.getColumn(), icon.asItem(), event -> {
                 // TODO check space
                 if (item.getCost() < 0) {
                     player.sendMessage(Message.VCSHOP_SOON.getString().get());
                     player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, .7f, .7f);
                     return;
                 }
-                Bson filter = Filters.eq("uuid", player.getUniqueId());
+                Bson filter = Filters.eq("uuid", player.getUniqueId().toString());
                 User user = main.getUserCollection().find(filter).first();
                 if (user == null || user.getVoteCoins() < item.getCost()) {
                     player.sendMessage(Message.VCSHOP_NOT_ENOUGH.getString().get());
@@ -61,6 +64,7 @@ public class VCShopCommand implements CommandExecutor {
                 }
                 item.getAction().accept(player);
                 user.setVoteCoins(user.getVoteCoins() - item.getCost());
+                main.getUserCollection().replaceOne(filter, user);
                 player.sendMessage(Message.VCSHOP_BUY.getString()
                         .replace("%item", item.getTitle())
                         .replace("%amount", "" + item.getCost())
@@ -68,6 +72,7 @@ public class VCShopCommand implements CommandExecutor {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, .7f, .7f);
             });
         }
+        gui.show(player);
         return true;
     }
 
