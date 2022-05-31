@@ -1,7 +1,7 @@
-[![Build](https://github.com/skycavemc/VoteSystem/actions/workflows/maven.yml/badge.svg?branch=master)](https://github.com/skycavemc/VoteSystem/actions/workflows/maven.yml)
 [![JitPack](https://jitpack.io/v/skycavemc/VoteSystem.svg)](https://jitpack.io/#skycavemc/VoteSystem)
 ![License](https://img.shields.io:/github/license/skycavemc/VoteSystem)
 [![CodeQL](https://github.com/skycavemc/VoteSystem/actions/workflows/codeql-analysis.yml/badge.svg?branch=master)](https://github.com/skycavemc/VoteSystem/actions/workflows/codeql-analysis.yml)
+[![Build](https://github.com/skycavemc/VoteSystem/actions/workflows/maven.yml/badge.svg?branch=master)](https://github.com/skycavemc/VoteSystem/actions/workflows/maven.yml)
 # VoteSystem
 Plugin for Skybee, rewarding players for voting for the server.
 
