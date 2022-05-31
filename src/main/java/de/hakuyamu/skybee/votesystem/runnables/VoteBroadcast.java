@@ -31,9 +31,11 @@ public class VoteBroadcast extends BukkitRunnable {
                 continue;
             }
 
-            LocalDate lastVoteDate = LocalDate.parse(user.getLastVoteDate());
-            if (lastVoteDate == null || lastVoteDate.compareTo(LocalDate.now()) == 0) {
-                continue;
+            if (user.getLastVoteDate() != null) {
+                LocalDate lastVoteDate = LocalDate.parse(user.getLastVoteDate());
+                if (lastVoteDate == null || lastVoteDate.compareTo(LocalDate.now()) == 0) {
+                    continue;
+                }
             }
 
             player.sendMessage(Message.VOTE_BROADCAST.getString()
