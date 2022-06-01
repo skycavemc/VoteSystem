@@ -38,7 +38,7 @@ public class VCShopCommand implements CommandExecutor {
                 .ofPattern("b_______b", "b_______b", "b_______b", "b_______b", "b_______b")
                 .startAtLine(1)
                 .withMaterial('b', ItemBuilder.of(Material.BLACK_STAINED_GLASS_PANE).name("§0").asItem());
-        GUI gui = main.getGuiFactory().createGUI(5, "&3VoteCoin Shop")
+        GUI gui = main.getGuiFactory().createGUI(5, "§3VoteCoin Shop")
                 .formatPattern(pattern);
         for (VCShopItem item : VCShopItem.values()) {
             ItemBuilder icon = ItemBuilder.of(item.getIcon());

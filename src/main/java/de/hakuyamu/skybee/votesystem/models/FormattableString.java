@@ -14,12 +14,7 @@ public class FormattableString {
     }
 
     public FormattableString replace(String from, String to) {
-        result = result.replaceFirst(from, to);
-        return this;
-    }
-
-    public FormattableString replaceAll(String from, String to) {
-        result = result.replaceAll(from, to);
+        result = result.replace(from, to);
         return this;
     }
 
