@@ -51,9 +51,11 @@ public final class VoteSystem extends JavaPlugin {
     private AutoSaveConfig eventConfig;
     private GUIFactory guiFactory;
     private Economy economy;
+    private static VoteSystem instance;
 
     @Override
     public void onEnable() {
+        instance = this;
         reloadResources();
         guiFactory = new GUIFactory(this);
         if (!setupEconomy()) {
@@ -186,6 +188,6 @@ public final class VoteSystem extends JavaPlugin {
     }
 
     public static @NotNull VoteSystem getInstance() {
-        return JavaPlugin.getPlugin(VoteSystem.class);
+        return instance;
     }
 }
