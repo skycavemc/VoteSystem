@@ -184,4 +184,8 @@ public final class VoteSystem extends JavaPlugin {
     public Economy getEconomy() {
         return economy;
     }
+
+    public static @NotNull VoteSystem getInstance() {
+        return JavaPlugin.getPlugin(VoteSystem.class);
+    }
 }

@@ -6,7 +6,7 @@
 
     <groupId>de.hakuyamu.skybee</groupId>
     <artifactId>VoteSystem</artifactId>
-    <version>3.2.1</version>
+    <version>3.2.2</version>
     <packaging>jar</packaging>
 
     <name>VoteSystem</name>
@@ -24,6 +24,29 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <artifactSet>
+                        <excludes>
+                            <exclude>com.github.NuVotifier.NuVotifier:nuvotifier-bukkit</exclude>
+                            <exclude>com.github.MilkBowl:VaultAPI</exclude>
+                        </excludes>
+                    </artifactSet>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
         <finalName>${project.name}-${project.version}</finalName>
     </build>
 
