@@ -2,6 +2,7 @@ package de.hakuyamu.skybee.votesystem.commands;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.Message;
 import de.hakuyamu.skybee.votesystem.models.AutoSaveConfig;
@@ -18,9 +19,11 @@ import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public class VoteAdminCommand implements CommandExecutor, TabCompleter {
 
@@ -70,7 +73,8 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
                 VoteUtils.processVote(args[1]);
             }
             case "clear" -> {
-                userCollection.drop();
+                main.getUserCollection().updateMany(Filters.exists("uuid"),
+                        Updates.combine(Updates.set("votes", 0), Updates.set("queued_votes", 0)));
                 sender.sendMessage(Message.VADMIN_CLEAR.getString().get());
             }
             case "reload" -> {
@@ -83,11 +87,7 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(Message.VADMIN_SETVOTECOINS_SYNTAX.getString().get());
                     return true;
                 }
-                OfflinePlayer other = Bukkit.getOfflinePlayerIfCached(args[1]);
-                if (other == null) {
-                    sender.sendMessage(Message.PLAYER_NOT_FOUND.getString().replace("%player", args[1]).get());
-                    return true;
-                }
+
                 int amount;
                 try {
                     amount = Integer.parseInt(args[2]);
@@ -96,6 +96,34 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
                     }
                 } catch (NumberFormatException e) {
                     sender.sendMessage(Message.INVALID_NUMBER.getString().replace("%number", args[2]).get());
+                    return true;
+                }
+
+                if (args[1].equalsIgnoreCase("all")) {
+                    sender.sendMessage(Message.VADMIN_SETVOTECOINS_START.getString().get());
+
+                    Bukkit.getScheduler().runTaskAsynchronously(main, () -> {
+                        for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
+                            UUID uuid = player.getUniqueId();
+                            Bson filter = Filters.eq("uuid", uuid);
+                            User user = main.getUserCollection().find(filter).first();
+
+                            if (user == null) {
+                                user = new User(uuid.toString(), 0, 0, LocalDate.now().toString(), 0);
+                                main.getUserCollection().insertOne(user);
+                            }
+
+                            user.setVoteCoins(amount);
+                            main.getUserCollection().replaceOne(filter, user);
+                        }
+                        sender.sendMessage(Message.VADMIN_SETVOTECOINS_FINISHED.getString().replace("%amount", "" + amount).get());
+                    });
+                    break;
+                }
+
+                OfflinePlayer other = Bukkit.getOfflinePlayerIfCached(args[1]);
+                if (other == null) {
+                    sender.sendMessage(Message.PLAYER_NOT_FOUND.getString().replace("%player", args[1]).get());
                     return true;
                 }
 

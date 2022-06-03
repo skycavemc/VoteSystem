@@ -1,6 +1,7 @@
 package de.hakuyamu.skybee.votesystem.util;
 
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import de.hakuyamu.skybee.votesystem.VoteSystem;
 import de.hakuyamu.skybee.votesystem.enums.EventReward;
 import de.hakuyamu.skybee.votesystem.enums.Message;
@@ -18,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.UUID;
 
 public class VoteUtils {
@@ -280,7 +282,8 @@ public class VoteUtils {
             return;
         }
         if (!event.getBoolean("started")) {
-            main.getUserCollection().drop();
+            main.getUserCollection().updateMany(Filters.exists("uuid"),
+                    Updates.combine(Updates.set("votes", 0), Updates.set("queued_votes", 0)));
             event.set("votes", 0);
             event.set("started", true);
             event.set("start-timestamp", LocalDateTime.now().toString());

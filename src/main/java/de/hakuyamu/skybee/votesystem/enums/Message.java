@@ -67,7 +67,7 @@ public enum Message {
     VADMIN_HELP_CLEAR("&a/vadmin clear\n&8» &7Setzt alle Daten zurück."),
     VADMIN_HELP_FAKE("&a/vadmin fake\n&8» &7Führt einen Fake Vote aus."),
     VADMIN_HELP_RELOAD("&a/vadmin reload\n&8» &7Lädt die Konfiguration neu."),
-    VADMIN_HELP_SETVOTECOINS("&a/vadmin setvotecoins <Spieler> <Anzahl> \n&8» &7Setzt die VoteCoins eines Spielers."),
+    VADMIN_HELP_SETVOTECOINS("&a/vadmin setvotecoins <Spieler | all> <Anzahl> \n&8» &7Setzt die VoteCoins eines Spielers."),
 
     // voteadmin start subcommand
     VADMIN_START_FIRST("&e&lDas &2&lVote&d&lEvent &e&lwurde gestartet!"),
@@ -90,6 +90,8 @@ public enum Message {
     // voteadmin setvotecoins subcommand
     VADMIN_SETVOTECOINS_SYNTAX("&e/vadmin setvotecoins <Spieler> <Anzahl>"),
     VADMIN_SETVOTECOINS("&7VoteCoins von &a%player &7auf &a%amount &7gesetzt."),
+    VADMIN_SETVOTECOINS_START("&aBeginne Setzen der VoteCoins, bitte warte einen Moment..."),
+    VADMIN_SETVOTECOINS_FINISHED("&aSetzen der VoteCoins abgeschlossen, jeder Spieler hat nun &2%amount &aVoteCoins."),
 
     // vcshop
     VCSHOP_NOT_ENOUGH("&cDu hast nicht genug VoteCoins."),
