@@ -6,7 +6,7 @@
 
     <groupId>de.hakuyamu.skybee</groupId>
     <artifactId>VoteSystem</artifactId>
-    <version>3.2.3</version>
+    <version>3.2.4</version>
     <packaging>jar</packaging>
 
     <name>VoteSystem</name>

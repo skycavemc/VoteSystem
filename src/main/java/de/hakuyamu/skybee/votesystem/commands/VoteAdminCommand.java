@@ -105,7 +105,7 @@ public class VoteAdminCommand implements CommandExecutor, TabCompleter {
                     Bukkit.getScheduler().runTaskAsynchronously(main, () -> {
                         for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
                             UUID uuid = player.getUniqueId();
-                            Bson filter = Filters.eq("uuid", uuid);
+                            Bson filter = Filters.eq("uuid", uuid.toString());
                             User user = main.getUserCollection().find(filter).first();
 
                             if (user == null) {
