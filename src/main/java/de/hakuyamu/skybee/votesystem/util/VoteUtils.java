@@ -49,6 +49,7 @@ public class VoteUtils {
         if (!offline) {
             main.getLogger().info(name + " voted for the server.");
             giveVoteRewards(player);
+            giveEventRewards();
             return;
         }
 
@@ -115,11 +116,9 @@ public class VoteUtils {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.6f);
             }
         }
-
-        giveEventRewards(player);
     }
 
-    private static void giveEventRewards(Player player) {
+    private static void giveEventRewards() {
         AutoSaveConfig event = main.getEventConfig();
         if (event == null) {
             main.getLogger().severe("Event config does not exist!");
@@ -138,11 +137,10 @@ public class VoteUtils {
                             .replace("%reward", reward.getName())
                             .get(false));
                     Utils.broadcast("");
-                    Bukkit.getOnlinePlayers().forEach(p -> p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.1f));
-                    for (String cmd : reward.getCommands()) {
-                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replaceAll("%player", player.getName()));
-                    }
 
+                    Bukkit.getOnlinePlayers().forEach(p ->
+                            p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.1f));
+                    reward.getAction().run();
                     event.set("completion." + reward, LocalDateTime.now().toString());
                 }
             }
