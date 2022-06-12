@@ -69,8 +69,12 @@ public enum VCShopItem {
         Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(),
                 "lp user " + player.getName() + " parent addtemp drohne 30d");
     }, 1000),
-    FLY(3, 7, ItemBuilder.of(Material.BARRIER).name("&cBald verfügbar").asItem(),
-            "Fly (30 Tage)", player -> {}, -1),
+    FLY(3, 7, ItemBuilder.of(Material.FEATHER).name("&3Fly (30 Tage)").glowing().asItem(),
+            "Fly (30 Tage)", player -> {
+        Bukkit.broadcast(Component.text(Message.VCSHOP_FLY.getString().replace("%player", player.getName()).get()));
+        Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(),
+                "lp user " + player.getName() + " parent addtemp vskyfall 30d");
+    }, 900),
     ;
 
     private final int row;

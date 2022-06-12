@@ -97,6 +97,7 @@ public enum Message {
     VCSHOP_NOT_ENOUGH("&cDu hast nicht genug VoteCoins."),
     VCSHOP_BUY("&7Du hast &a%item &7aus dem &3VoteCoinShop &7für &3%amount &bVoteCoins &7erhalten."),
     VCSHOP_DROHNE("&2%player &ahat sich gerade den Rang &6Drohne (1 Monat) &aim VoteCoinShop &8(&2/vcshop&8) &agekauft!"),
+    VCSHOP_FLY("&2%player &ahat sich gerade &2Fly (30 Tage) &aim VoteCoinShop &8(&2/vcshop&8) &agekauft!"),
     VCSHOP_SOON("&cDieses Item ist noch nicht verfügbar."),
 
     // vc command
